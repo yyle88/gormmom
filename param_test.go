@@ -3,6 +3,7 @@ package gormmom
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
 	"github.com/yyle88/runpath"
 )
 
@@ -18,6 +19,17 @@ func TestNewParamV2(t *testing.T) {
 }
 
 func TestNewParamV3(t *testing.T) {
-	param := NewParamV3(runpath.Current(), paramExample{})
+	param := NewParamV3(runpath.Current(), &paramExample{})
 	param.Validate()
+}
+
+type paramExample2 struct {
+	V姓名 string `gorm:"name"`
+	V年龄 int    `gorm:"age"`
+	V性别 bool   `gorm:"sex"`
+}
+
+func TestCreateParams(t *testing.T) {
+	params := CreateParams(runpath.PARENT.Path(), []any{&paramExample{}, &paramExample2{}})
+	require.Len(t, params, 2)
 }

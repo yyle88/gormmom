@@ -2,6 +2,7 @@ package utils
 
 import (
 	"os"
+	"path/filepath"
 	"sync"
 
 	"github.com/yyle88/done"
@@ -27,4 +28,17 @@ func GetSchemaFieldsMap(dest interface{}) map[string]*schema.Field {
 
 func WriteFile(path string, data []byte) error {
 	return os.WriteFile(path, data, 0644)
+}
+
+// GetLsGoFilePaths 获取指定目录下的所有 .go 文件路径（不递归子目录）
+func GetLsGoFilePaths(root string) []string {
+	var paths []string
+	var entries = done.VAE(os.ReadDir(root)).Nice()
+	for _, one := range entries {
+		// 检查是否是文件和扩展名为 .go
+		if !one.IsDir() && filepath.Ext(one.Name()) == ".go" {
+			paths = append(paths, filepath.Join(root, one.Name()))
+		}
+	}
+	return paths
 }

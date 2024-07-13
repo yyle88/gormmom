@@ -54,6 +54,12 @@ func (cfg *Config) SetSkipAbc(skipAbc bool) *Config {
 	return cfg
 }
 
+func (cfg *Config) GenReplaces(params []*Param) {
+	for _, param := range params {
+		cfg.GenWrite(param, cfg.GenSource(param))
+	}
+}
+
 func (cfg *Config) GenReplace(param *Param) {
 	cfg.GenWrite(param, cfg.GenSource(param))
 }
