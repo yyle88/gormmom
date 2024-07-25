@@ -7,21 +7,21 @@ import (
 )
 
 // 映射通过go字段名生成表列名，同时允许添加自定义的前缀
-var makeColumnNameFunctions = map[Rule]func(fieldName string) string{
+var makeColumnNameFunctions = map[RULE]func(fieldName string) string{
 	S30:  makeS30,
 	S30U: makeS30U,
 	S63:  makeS63,
 	S63U: makeS63U,
 }
 
-func (rule Rule) MakeName(fieldName string) string {
+func (rule RULE) MakeName(fieldName string) string {
 	if makeFunc, exist := makeColumnNameFunctions[rule]; exist {
 		return makeFunc(fieldName)
 	}
 	panic(erero.Errorf("no validation function. fieldName=%s rule_name=%s", fieldName, string(rule)))
 }
 
-func MakeName(rule Rule, columnName string, customMakeNames map[Rule]func(string) string) string {
+func MakeName(rule RULE, columnName string, customMakeNames map[RULE]func(string) string) string {
 	if len(customMakeNames) > 0 { //优先使用自定义的函数
 		if makeFunc, exist := customMakeNames[rule]; exist {
 			return makeFunc(columnName)

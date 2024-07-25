@@ -9,7 +9,7 @@ import (
 )
 
 func TestGen(t *testing.T) {
-	cfg := gormmom.NewConfig().SetDftRule(gormmomrule.S63U)
+	cfg := gormmom.NewConfig().SetDefaultRule(gormmomrule.S63U)
 	t.Log(cfg)
 
 	srcPath := runtestpath.SrcPath(t)

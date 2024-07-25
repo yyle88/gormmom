@@ -9,5 +9,5 @@ func TestRule_MakeName(t *testing.T) {
 }
 
 func TestMakeName(t *testing.T) {
-	t.Log(MakeName(S63, "啦啦啦", map[Rule]func(string) string{}))
+	t.Log(MakeName(S63, "啦啦啦", map[RULE]func(string) string{}))
 }

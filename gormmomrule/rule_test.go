@@ -11,5 +11,5 @@ func TestRule_Validate(t *testing.T) {
 }
 
 func TestValidate(t *testing.T) {
-	require.True(t, Validate(S63, "abc", map[Rule]func(string) bool{}))
+	require.True(t, Validate(S63, "abc", map[RULE]func(string) bool{}))
 }

@@ -39,7 +39,7 @@ func TestGenCode(t *testing.T) {
 }
 
 func TestGenCode_S63U(t *testing.T) {
-	cfg := NewConfig().SetDftRule(gormmomrule.S63U)
+	cfg := NewConfig().SetDefaultRule(gormmomrule.S63U)
 	t.Log(cfg)
 
 	srcPath := runpath.CurrentPath()

@@ -19,38 +19,38 @@ import (
 )
 
 type Config struct {
-	tagName string
-	dftRule gormmomrule.Rule //默认检查规则
-	nameMap map[gormmomrule.Rule]func(string) string
-	skipAbc bool //是否跳过简单字段，有的字段虽然没有配置名称或者规则，但是它满足简单字段，就也不做任何处理
+	ruleTagName string
+	defaultRule gormmomrule.RULE //默认检查规则
+	nameFuncMap map[gormmomrule.RULE]func(string) string
+	skipAbc123  bool //是否跳过简单字段，有的字段虽然没有配置名称或者规则，但是它满足简单字段，就也不做任何处理
 }
 
 func NewConfig() *Config {
 	return &Config{
-		tagName: "mom",
-		dftRule: gormmomrule.S63, //默认检查规则，就是查看是不是63个合法字符（即字母数组下划线等）
-		nameMap: make(map[gormmomrule.Rule]func(string) string),
-		skipAbc: true,
+		ruleTagName: "mom",
+		defaultRule: gormmomrule.S63, //默认检查规则，就是查看是不是63个合法字符（即字母数组下划线等）
+		nameFuncMap: make(map[gormmomrule.RULE]func(string) string),
+		skipAbc123:  true,
 	}
 }
 
-func (cfg *Config) SetTagName(tagName string) *Config {
-	cfg.tagName = tagName
+func (cfg *Config) SetRuleTagName(ruleTagName string) *Config {
+	cfg.ruleTagName = ruleTagName
 	return cfg
 }
 
-func (cfg *Config) SetDftRule(dftRule gormmomrule.Rule) *Config {
-	cfg.dftRule = dftRule
+func (cfg *Config) SetDefaultRule(defaultRule gormmomrule.RULE) *Config {
+	cfg.defaultRule = defaultRule
 	return cfg
 }
 
-func (cfg *Config) SetNameMap(nameMap map[gormmomrule.Rule]func(string) string) *Config {
-	cfg.nameMap = nameMap
+func (cfg *Config) SetNameFuncMap(nameFuncMap map[gormmomrule.RULE]func(string) string) *Config {
+	cfg.nameFuncMap = nameFuncMap
 	return cfg
 }
 
-func (cfg *Config) SetSkipAbc(skipAbc bool) *Config {
-	cfg.skipAbc = skipAbc
+func (cfg *Config) SetSkipSimple(skipSimple bool) *Config {
+	cfg.skipAbc123 = skipSimple
 	return cfg
 }
 
@@ -104,11 +104,11 @@ func (cfg *Config) GenSource(param *Param) []byte {
 
 			if field.Tag == nil {
 				zaplog.LOG.Debug("NO TAG", zap.String("struct_name", nameIdent.Name))
-				if cfg.skipAbc && gormmomrule.S63.Validate(schemaField.DBName) {
+				if cfg.skipAbc123 && gormmomrule.S63.Validate(schemaField.DBName) {
 					zaplog.LOG.Debug("SKIP SIMPLE FIELD", zap.String("struct_name", nameIdent.Name))
 					continue
 				}
-				rule := cfg.dftRule
+				rule := cfg.defaultRule
 				if !rule.Validate(schemaField.DBName) {
 					if len(field.Names) >= 2 { //比如 a,b int 这种两个字段在一起，但其中一个字段的列名不正确时，就没法自动解决啦（其实有办法但不想实现，因为代价较大而没有收益）
 						const reason = "CAN NOT HANDLE THIS SITUATION"
@@ -122,7 +122,7 @@ func (cfg *Config) GenSource(param *Param) []byte {
 					})
 				}
 			} else if ruleName := cfg.extractRuleName(field.Tag.Value); ruleName != "" {
-				rule := gormmomrule.Rule(ruleName)
+				rule := gormmomrule.RULE(ruleName)
 				zaplog.LOG.Debug("process", zap.String("rule", string(rule)))
 				newTag := cfg.newFixTagCode(schemaField, field.Tag.Value, rule)
 				changeSteps = append(changeSteps, &changeType{
@@ -130,11 +130,11 @@ func (cfg *Config) GenSource(param *Param) []byte {
 					code: newTag,
 				})
 			} else {
-				if cfg.skipAbc && gormmomrule.S63.Validate(schemaField.DBName) {
+				if cfg.skipAbc123 && gormmomrule.S63.Validate(schemaField.DBName) {
 					zaplog.LOG.Debug("SKIP SIMPLE FIELD", zap.String("struct_name", nameIdent.Name))
 					continue
 				}
-				rule := cfg.dftRule
+				rule := cfg.defaultRule
 				if !rule.Validate(schemaField.DBName) { //按照比较宽泛的规则也校验不过的时候就需要修正字段名
 					newTag := cfg.newFixTagCode(schemaField, field.Tag.Value, rule)
 					changeSteps = append(changeSteps, &changeType{
@@ -160,7 +160,7 @@ func (cfg *Config) GenSource(param *Param) []byte {
 }
 
 func (cfg *Config) extractRuleName(tag string) string {
-	tagValue := syntaxgo_tag.ExtractTagValue(tag, cfg.tagName)
+	tagValue := syntaxgo_tag.ExtractTagValue(tag, cfg.ruleTagName)
 	if tagValue == "" {
 		return ""
 	}
@@ -171,7 +171,7 @@ func (cfg *Config) extractRuleName(tag string) string {
 	return tagField
 }
 
-func (cfg *Config) newFixTagCode(schemaField *schema.Field, tag string, rule gormmomrule.Rule) string {
+func (cfg *Config) newFixTagCode(schemaField *schema.Field, tag string, rule gormmomrule.RULE) string {
 	zaplog.LOG.Debug("new_fix_tag_code", zap.String("name", schemaField.Name), zap.String("tag", tag))
 	//在 gorm 里修改 column 内容
 	newTag := cfg.newFixGormTag(schemaField, tag, rule)
@@ -182,8 +182,8 @@ func (cfg *Config) newFixTagCode(schemaField *schema.Field, tag string, rule gor
 	return newTag
 }
 
-func (cfg *Config) newFixGormTag(schemaField *schema.Field, tag string, rule gormmomrule.Rule) string {
-	var columnName = gormmomrule.MakeName(rule, schemaField.Name, cfg.nameMap)
+func (cfg *Config) newFixGormTag(schemaField *schema.Field, tag string, rule gormmomrule.RULE) string {
+	var columnName = gormmomrule.MakeName(rule, schemaField.Name, cfg.nameFuncMap)
 	zaplog.LOG.Debug("new_fix_gorm_tag", zap.String("name", schemaField.Name), zap.String("column_name", columnName))
 
 	tagValue, sdx, edx := syntaxgo_tag.ExtractTagValueIndex(tag, "gorm")
@@ -202,16 +202,16 @@ func (cfg *Config) newFixGormTag(schemaField *schema.Field, tag string, rule gor
 	return cfg.newFixTagField(tag, "gorm", "column", columnName)
 }
 
-func (cfg *Config) newFixRuleTag(tag string, rule gormmomrule.Rule) string {
+func (cfg *Config) newFixRuleTag(tag string, rule gormmomrule.RULE) string {
 	var ruleName = string(rule)
 	zaplog.LOG.Debug("new_fix_rule_tag", zap.String("rule_name", ruleName))
 
-	tagValue, sdx, edx := syntaxgo_tag.ExtractTagValueIndex(tag, cfg.tagName)
+	tagValue, sdx, edx := syntaxgo_tag.ExtractTagValueIndex(tag, cfg.ruleTagName)
 	if sdx < 0 || edx < 0 { //表示没找到 gorm 相关的内容
 		if tagValue != "" {
 			zaplog.LOG.Panic("IMPOSSIBLE")
 		}
-		part := fmt.Sprintf(`%s:"rule:%s;"`, cfg.tagName, ruleName)
+		part := fmt.Sprintf(`%s:"rule:%s;"`, cfg.ruleTagName, ruleName)
 		if rch := tag[len(tag)-2]; rch != ' ' && rch != '`' {
 			part = " " + part //说明前面还有别的标签
 		}
@@ -219,7 +219,7 @@ func (cfg *Config) newFixRuleTag(tag string, rule gormmomrule.Rule) string {
 		return tag[:p] + part + tag[p:]
 	}
 	//设置这个标签的这个字段的值
-	return cfg.newFixTagField(tag, cfg.tagName, "rule", ruleName)
+	return cfg.newFixTagField(tag, cfg.ruleTagName, "rule", ruleName)
 }
 
 func (cfg *Config) newFixTagField(tag string, tagName string, tagFieldName string, tagFieldValue string) string {
