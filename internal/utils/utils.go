@@ -30,8 +30,8 @@ func WriteFile(path string, data []byte) error {
 	return os.WriteFile(path, data, 0644)
 }
 
-// GetLsGoFilePaths 获取指定目录下的所有 .go 文件路径（不递归子目录）
-func GetLsGoFilePaths(root string) []string {
+// LsGoFilePaths 获取指定目录下的所有 .go 文件路径（不递归子目录）
+func LsGoFilePaths(root string) []string {
 	var paths []string
 	var entries = done.VAE(os.ReadDir(root)).Nice()
 	for _, one := range entries {

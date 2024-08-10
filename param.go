@@ -55,7 +55,7 @@ func (param *Param) Validate() {
 
 func CreateParams(root string, models []interface{}) []*Param {
 	var params = make([]*Param, 0, len(models))
-	var paths = utils.GetLsGoFilePaths(root)
+	var paths = utils.LsGoFilePaths(root)
 	var idxSet = make(map[int]bool, len(models)) //记住已经处理的数据
 	for _, path := range paths {
 		astFile, err := syntaxgo_ast.NewAstXFilepath(path)
