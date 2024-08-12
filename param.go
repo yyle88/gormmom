@@ -51,7 +51,7 @@ func NewParamV3(path string, object interface{}) *Param {
 	return NewParam(path, structName, sch, columnsMap)
 }
 
-func (param *Param) Validate() {
+func (param *Param) CheckParam() {
 	if param.path == "" {
 		panic("param.path is none")
 	}

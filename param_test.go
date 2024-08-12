@@ -15,12 +15,12 @@ type paramExample struct {
 
 func TestNewParamV2(t *testing.T) {
 	param := NewParamV2[paramExample](runpath.Current())
-	param.Validate()
+	param.CheckParam()
 }
 
 func TestNewParamV3(t *testing.T) {
 	param := NewParamV3(runpath.Current(), &paramExample{})
-	param.Validate()
+	param.CheckParam()
 }
 
 type paramExample2 struct {

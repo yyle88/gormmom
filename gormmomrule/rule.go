@@ -32,12 +32,12 @@ func (rule RULE) Validate(columnName string) bool {
 	panic(erero.Errorf("no validation function. column_name=%s rule_name=%s", columnName, string(rule)))
 }
 
-func Validate(rule RULE, columnName string, customValidations map[RULE]func(string) bool) bool {
+func Validate(rule RULE, columnName string, validationsMap map[RULE]func(string) bool) bool {
 	if rule == "" {
 		return true
 	}
-	if len(customValidations) > 0 { //优先使用自定义的函数
-		if check, exist := customValidations[rule]; exist {
+	if len(validationsMap) > 0 { //优先使用自定义的函数
+		if check, exist := validationsMap[rule]; exist {
 			return check(columnName)
 		}
 	}

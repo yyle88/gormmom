@@ -21,9 +21,13 @@ uniqueIndex:
 这个标签不仅表示字段的唯一性，还明确要求 GORM 生成一个带有名称的唯一索引。通常会按照 idx_<table_name>_<column_name> 的格式生成索引名称（具体格式可能因数据库而异）。
 */
 type paramExample3 struct {
-	V姓名 string `gorm:"column:name;index"`      //普通索引，默认名称不正确（现在的默认名称带中文）
-	V年龄 int    `gorm:"column:age;unique"`      //唯一约束，而非唯一索引，默认名称正确，使用的还是 uni_param_example3_age 这个约束名
-	V性别 bool   `gorm:"column:sex;uniqueIndex"` //唯一索引，带名称，默认名称不正确（现在的默认名称带中文）
+	V身份证号 string `gorm:"column:person_num;primaryKey"`
+	V学校编号 string `gorm:"column:school_num;uniqueIndex:udx_student_unique"`
+	V班级编号 string `gorm:"column:class_num;uniqueIndex:udx_student_unique"`
+	V班内排名 string `gorm:"column:student_num;uniqueIndex:udx_student_unique"`
+	V姓名   string `gorm:"column:name;index"`      //普通索引，默认名称不正确（现在的默认名称带中文）
+	V年龄   int    `gorm:"column:age;unique"`      //唯一约束，而非唯一索引，默认名称正确，使用的还是 uni_param_example3_age 这个约束名
+	V性别   bool   `gorm:"column:sex;uniqueIndex"` //唯一索引，带名称，默认名称不正确（现在的默认名称带中文）
 }
 
 func TestDryRunMigrate(t *testing.T) {
@@ -46,4 +50,26 @@ func TestConfig_CheckIndexes(t *testing.T) {
 	cfg := NewConfig()
 	t.Log(cfg)
 	cfg.CheckIndexes(params)
+}
+
+type paramExample4 struct {
+	V证号 string `gorm:"primaryKey"`
+	V姓名 string `gorm:"index"`
+	V年龄 int    `gorm:"unique"`
+	V性别 bool   `gorm:"uniqueIndex"`
+}
+
+func (*paramExample4) TableName() string {
+	return "tbn88"
+}
+
+func TestConfig_GenCode_GenIndexes(t *testing.T) {
+	cfg := NewConfig()
+	t.Log(cfg)
+
+	srcPath := runpath.CurrentPath()
+	param := NewParamV2[paramExample4](srcPath)
+
+	newCode := cfg.GenSource(param)
+	t.Log(string(newCode))
 }

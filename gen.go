@@ -69,7 +69,7 @@ func (cfg *Config) GenWrite(param *Param, newCode []byte) {
 }
 
 func (cfg *Config) GenSource(param *Param) []byte {
-	param.Validate()
+	param.CheckParam()
 
 	srcData := done.VAE(os.ReadFile(param.path)).Nice()
 	astFile := done.VCE(syntaxgo_ast.NewAstFromSource(srcData)).Nice()
@@ -82,11 +82,7 @@ func (cfg *Config) GenSource(param *Param) []byte {
 	}
 	done.Done(ast.Print(token.NewFileSet(), structType))
 
-	type changeType struct {
-		node ast.Node
-		code string
-	}
-	var changeSteps []*changeType
+	var replacers []*changeType
 
 	// 遍历结构体的字段
 	for _, field := range structType.Fields.List {
@@ -113,58 +109,86 @@ func (cfg *Config) GenSource(param *Param) []byte {
 					if len(field.Names) >= 2 { //比如 a,b int 这种两个字段在一起，但其中一个字段的列名不正确时，就没法自动解决啦（其实有办法但不想实现，因为代价较大而没有收益）
 						const reason = "CAN NOT HANDLE THIS SITUATION"
 						zaplog.LOG.Panic(reason, zap.String("struct_name", nameIdent.Name))
-						panic(reason)
+						panic(reason) //这种情况下当有错时，就不处理这种情况，就需要程序员先把两个字段定义到两行里
 					}
-					newTag := cfg.newFixTagCode(schemaField, "``", rule) //这里应该走创建标签的逻辑，但和修改标签的逻辑是相同的
-					changeSteps = append(changeSteps, &changeType{
+					changeTag := cfg.newFixTagCode(schemaField, "``", rule) //这里应该走创建标签的逻辑，但和修改标签的逻辑是相同的
+					replacers = append(replacers, &changeType{
+						name: nameIdent.Name,
 						node: syntaxgo_ast.NewNode(field.End(), field.End()), //在尾部插入新的标签，要紧贴字段而且在换行符前面
-						code: newTag,
+						code: changeTag,
 					})
 				}
-			} else if ruleName := cfg.extractRuleName(field.Tag.Value); ruleName != "" {
-				rule := gormmomrule.RULE(ruleName)
-				zaplog.LOG.Debug("process", zap.String("rule", string(rule)))
-				newTag := cfg.newFixTagCode(schemaField, field.Tag.Value, rule)
-				changeSteps = append(changeSteps, &changeType{
-					node: field.Tag, //完整替换原来的标签
-					code: newTag,
-				})
 			} else {
-				if cfg.skipAbc123 && gormmomrule.S63.Validate(schemaField.DBName) {
-					zaplog.LOG.Debug("SKIP SIMPLE FIELD", zap.String("struct_name", nameIdent.Name))
-					continue
-				}
-				rule := cfg.defaultRule
-				if !rule.Validate(schemaField.DBName) { //按照比较宽泛的规则也校验不过的时候就需要修正字段名
-					newTag := cfg.newFixTagCode(schemaField, field.Tag.Value, rule)
-					changeSteps = append(changeSteps, &changeType{
+				if ruleName := cfg.extractRuleField(field.Tag.Value); ruleName != "" {
+					rule := gormmomrule.RULE(ruleName)
+					zaplog.LOG.Debug("process", zap.String("rule", string(rule)))
+					changeTag := cfg.newFixTagCode(schemaField, field.Tag.Value, rule)
+					replacers = append(replacers, &changeType{
+						name: nameIdent.Name,
 						node: field.Tag, //完整替换原来的标签
-						code: newTag,
+						code: changeTag,
 					})
 				} else {
-					zaplog.LOG.Debug("meet rule skip", zap.String("name", nameIdent.Name), zap.String("tag", field.Tag.Value))
+					if cfg.skipAbc123 && gormmomrule.S63.Validate(schemaField.DBName) {
+						zaplog.LOG.Debug("SKIP SIMPLE FIELD", zap.String("struct_name", nameIdent.Name))
+						continue
+					}
+					rule := cfg.defaultRule
+					if !rule.Validate(schemaField.DBName) { //按照比较宽泛的规则也校验不过的时候就需要修正字段名
+						changeTag := cfg.newFixTagCode(schemaField, field.Tag.Value, rule)
+						replacers = append(replacers, &changeType{
+							name: nameIdent.Name,
+							node: field.Tag, //完整替换原来的标签
+							code: changeTag,
+						})
+					} else {
+						zaplog.LOG.Debug("meet rule skip", zap.String("name", nameIdent.Name), zap.String("tag", field.Tag.Value))
+					}
 				}
 			}
 		}
 	}
 
+	zaplog.LOG.Debug("change_column_names")
+	for _, rep := range replacers {
+		zaplog.LOG.Debug("check_column:", zap.String("name", rep.name), zap.String("code", rep.code))
+	}
+
+	//这里增加个新逻辑，就是单列索引的索引名称不正确，需要也校正索引名，因此这个函数会补充标签内容
+	cfg.rewriteIndexNames(param, replacers)
+
+	zaplog.LOG.Debug("change_index_names")
+	for _, rep := range replacers {
+		zaplog.LOG.Debug("check_index:", zap.String("name", rep.name), zap.String("code", rep.code))
+	}
+
 	//需要翻转下从后往前替换，因为替换以后源码会变，假如从前往后替换坐标就对不上啦，而从后往前替换则不存在这个问题
-	slices.Reverse(changeSteps)
+	slices.Reverse(replacers)
 
 	//接下来替换代码，把需要 新增 或者 替换 的标签都设置到代码里
 	newCode := srcData
-	for _, step := range changeSteps {
+	for _, step := range replacers {
 		newCode = syntaxgo_ast.ChangeNodeBytes(newCode, step.node, []byte(step.code))
 	}
 	return newCode
 }
 
-func (cfg *Config) extractRuleName(tag string) string {
-	tagValue := syntaxgo_tag.ExtractTagValue(tag, cfg.ruleTagName)
+type changeType struct {
+	name string   //结构体的字段名
+	node ast.Node //标签的起止位置-就是在src源码中的位置，便于后面的替换代码
+	code string   //新标签的新内容-就是标签的完整全部内容
+}
+
+func (cfg *Config) extractRuleField(tagCode string) string {
+	return cfg.extractSomeField(tagCode, cfg.ruleTagName, "rule")
+}
+
+func (cfg *Config) extractSomeField(tagCode string, key1 string, key2 string) string {
+	tagValue := syntaxgo_tag.ExtractTagValue(tagCode, key1)
 	if tagValue == "" {
 		return ""
 	}
-	tagField := syntaxgo_tag.ExtractTagField(tagValue, "rule", true)
+	tagField := syntaxgo_tag.ExtractTagField(tagValue, key2, true)
 	if tagField == "" {
 		return ""
 	}

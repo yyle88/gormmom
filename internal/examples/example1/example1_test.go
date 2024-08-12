@@ -13,7 +13,7 @@ func TestGen(t *testing.T) {
 
 	srcPath := runtestpath.SrcPath(t)
 	param := gormmom.NewParamV2[Example](srcPath)
-	param.Validate()
+	param.CheckParam()
 
 	cfg.GenReplace(param)
 }
