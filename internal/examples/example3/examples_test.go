@@ -11,7 +11,7 @@ func TestGen(t *testing.T) {
 	cfg := gormmom.NewConfig()
 	t.Log(cfg)
 
-	params := gormmom.CreateParams(runpath.PARENT.Path(), []interface{}{
+	params := gormmom.NewParams(runpath.PARENT.Path(), []interface{}{
 		&Example1{},
 		&Example2{},
 	})

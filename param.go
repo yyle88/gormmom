@@ -1,6 +1,9 @@
 package gormmom
 
 import (
+	"sync"
+
+	"github.com/yyle88/done"
 	"github.com/yyle88/gormmom/internal/utils"
 	"github.com/yyle88/syntaxgo/syntaxgo_ast"
 	"github.com/yyle88/syntaxgo/syntaxgo_reflect"
@@ -12,14 +15,16 @@ import (
 type Param struct {
 	path       string
 	structName string
+	sch        *schema.Schema
 	columnsMap map[string]*schema.Field
 }
 
 // NewParam 创建参数信息
-func NewParam(path string, structName string, columnsMap map[string]*schema.Field) *Param {
+func NewParam(path string, structName string, sch *schema.Schema, columnsMap map[string]*schema.Field) *Param {
 	return &Param{
 		path:       path,
 		structName: structName,
+		sch:        sch,
 		columnsMap: columnsMap,
 	}
 }
@@ -35,10 +40,15 @@ func NewParamV3(path string, object interface{}) *Param {
 	structName := syntaxgo_reflect.GetTypeNameV3(object)
 	zaplog.LOG.Debug("new_param", zap.String("struct_name", structName))
 
-	columnsMap := utils.GetSchemaFieldsMap(&object)
+	sch := done.VCE(schema.Parse(object, &sync.Map{}, &schema.NamingStrategy{
+		SingularTable: false, //和默认值相同
+		NoLowerCase:   false, //和默认值相同
+	})).Nice()
+
+	columnsMap := utils.NewSchemaFieldsMap(sch)
 	zaplog.LOG.Debug("new_param", zap.Int("column_size", len(columnsMap)))
 
-	return NewParam(path, structName, columnsMap)
+	return NewParam(path, structName, sch, columnsMap)
 }
 
 func (param *Param) Validate() {
@@ -48,14 +58,17 @@ func (param *Param) Validate() {
 	if param.structName == "" {
 		panic("param.struct_name is none")
 	}
+	if param.sch == nil {
+		panic("param.sch is none")
+	}
 	if param.columnsMap == nil {
 		panic("param.columns_map is none")
 	}
 }
 
-func CreateParams(root string, models []interface{}) []*Param {
+func NewParams(root string, models []interface{}) []*Param {
 	var params = make([]*Param, 0, len(models))
-	var paths = utils.LsGoFilePaths(root)
+	var paths = utils.LsGoSrcFilePaths(root)
 	var idxSet = make(map[int]bool, len(models)) //记住已经处理的数据
 	for _, path := range paths {
 		astFile, err := syntaxgo_ast.NewAstXFilepath(path)

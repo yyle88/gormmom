@@ -24,12 +24,12 @@ func TestNewParamV3(t *testing.T) {
 }
 
 type paramExample2 struct {
-	V姓名 string `gorm:"name"`
-	V年龄 int    `gorm:"age"`
-	V性别 bool   `gorm:"sex"`
+	V姓名 string `gorm:"column:name"`
+	V年龄 int    `gorm:"column:age"`
+	V性别 bool   `gorm:"column:sex"`
 }
 
-func TestCreateParams(t *testing.T) {
-	params := CreateParams(runpath.PARENT.Path(), []any{&paramExample{}, &paramExample2{}})
+func TestNewParams(t *testing.T) {
+	params := NewParams(runpath.PARENT.Path(), []any{&paramExample{}, &paramExample2{}})
 	require.Len(t, params, 2)
 }
