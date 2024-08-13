@@ -189,7 +189,7 @@ func (cfg *Config) extractSomeField(tagCode string, key1 string, key2 string) st
 	if tagValue == "" {
 		return ""
 	}
-	tagField := syntaxgo_tag.ExtractTagField(tagValue, key2, true)
+	tagField := syntaxgo_tag.ExtractTagField(tagValue, key2, syntaxgo_tag.EXCLUDE_WHITESPACE_PREFIX)
 	if tagField == "" {
 		return ""
 	}
@@ -263,7 +263,7 @@ func (cfg *Config) newFixTagField(tag string, tagName string, tagFieldName strin
 	}
 	zaplog.LOG.Debug("new_fix_tag_field", zap.String("tag_value", tagValue), zap.Int("sdx", sdx), zap.Int("edx", edx))
 
-	tagField, s2x, e2x := syntaxgo_tag.ExtractTagFieldIndex(tagValue, tagFieldName, false)
+	tagField, s2x, e2x := syntaxgo_tag.ExtractTagFieldIndex(tagValue, tagFieldName, syntaxgo_tag.INCLUDE_WHITESPACE_PREFIX)
 	if s2x < 0 || e2x < 0 { //表示没找到 rule 自定义的内容
 		part := fmt.Sprintf(tagFieldName+":%s;", tagFieldValue)
 		if insertLocation == TOP {
