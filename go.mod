@@ -3,6 +3,7 @@ module github.com/yyle88/gormmom
 go 1.22.3
 
 require (
+	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.9.0
 	github.com/yyle88/done v1.0.5
 	github.com/yyle88/erero v1.0.7
@@ -21,7 +22,6 @@ require (
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/mattn/go-sqlite3 v1.14.22 // indirect
-	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/yyle88/gormcnm v1.0.25 // indirect
 	github.com/yyle88/mutexmap v1.0.3 // indirect

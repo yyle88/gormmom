@@ -4,7 +4,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/yyle88/gormmom/internal/encnm"
+	"github.com/yyle88/gormmom/internal/enctohex"
 )
 
 var replacementsMap = map[string]string{
@@ -66,7 +66,7 @@ func makeName(fieldName string) string {
 				res.WriteString("column")
 				res.WriteRune('_')
 			}
-			res.WriteString(encnm.Uint32ToHex4Los(c))
+			res.WriteString(enctohex.Uint32ToHex4Los(c))
 			preSimple = false
 		}
 	}

@@ -1,4 +1,4 @@
-package encnm
+package enctohex
 
 import (
 	"encoding/binary"

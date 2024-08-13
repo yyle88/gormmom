@@ -106,7 +106,7 @@ func (cfg *Config) rewriteSingleColumnIndex(param *Param, schemaIndex schema.Ind
 	zaplog.LOG.Debug("tag_field_name", zap.String("tag_field_name", tagFieldName))
 
 	//这里还是有些问题
-	//change.code = cfg.newFixTagField(change.code, "gorm", tagFieldName, newIndexName)
+	//change.code = cfg.newFixTagField(change.code, "gorm", tagFieldName, newIndexName, END)
 
 	zaplog.LOG.Debug("new_gorm_tag", zap.String("new_gorm_tag", change.code))
 }

@@ -8,6 +8,7 @@ import (
 	"slices"
 
 	"github.com/yyle88/done"
+	"github.com/yyle88/erero"
 	"github.com/yyle88/formatgo"
 	"github.com/yyle88/gormmom/gormmomrule"
 	"github.com/yyle88/gormmom/internal/utils"
@@ -223,7 +224,7 @@ func (cfg *Config) newFixGormTag(schemaField *schema.Field, tag string, rule gor
 		return tag[:p] + part + tag[p:]
 	}
 	//设置这个标签的这个字段的值
-	return cfg.newFixTagField(tag, "gorm", "column", columnName)
+	return cfg.newFixTagField(tag, "gorm", "column", columnName, TOP)
 }
 
 func (cfg *Config) newFixRuleTag(tag string, rule gormmomrule.RULE) string {
@@ -243,10 +244,17 @@ func (cfg *Config) newFixRuleTag(tag string, rule gormmomrule.RULE) string {
 		return tag[:p] + part + tag[p:]
 	}
 	//设置这个标签的这个字段的值
-	return cfg.newFixTagField(tag, cfg.ruleTagName, "rule", ruleName)
+	return cfg.newFixTagField(tag, cfg.ruleTagName, "rule", ruleName, TOP)
 }
 
-func (cfg *Config) newFixTagField(tag string, tagName string, tagFieldName string, tagFieldValue string) string {
+type enumInsertLocation string
+
+const (
+	TOP enumInsertLocation = "TOP"
+	END enumInsertLocation = "END"
+)
+
+func (cfg *Config) newFixTagField(tag string, tagName string, tagFieldName string, tagFieldValue string, insertLocation enumInsertLocation) string {
 	zaplog.LOG.Debug("new_fix_tag_field", zap.String("tag", tag))
 
 	tagValue, sdx, edx := syntaxgo_tag.ExtractTagValueIndex(tag, tagName)
@@ -258,8 +266,22 @@ func (cfg *Config) newFixTagField(tag string, tagName string, tagFieldName strin
 	tagField, s2x, e2x := syntaxgo_tag.ExtractTagFieldIndex(tagValue, tagFieldName, false)
 	if s2x < 0 || e2x < 0 { //表示没找到 rule 自定义的内容
 		part := fmt.Sprintf(tagFieldName+":%s;", tagFieldValue)
-		p := sdx //插在gorm:的后面
-		return tag[:p] + part + tag[p:]
+		if insertLocation == TOP {
+			p := sdx //插在gorm:的后面
+			return tag[:p] + part + tag[p:]
+		} else if insertLocation == END {
+			p := edx
+			if p > 0 {
+				if c := tag[p-1]; c == '"' || c == ';' || c == ' ' {
+					//当是第一个或者前一个已经带分号时，就不需要加分号
+				} else {
+					part = ";" + part //否则就需要在前面添加个分号
+				}
+			}
+			return tag[:p] + part + tag[p:]
+		} else {
+			panic(erero.New("WRONG"))
+		}
 	}
 	zaplog.LOG.Debug("new_fix_tag_field", zap.String("tag_field", tagField), zap.Int("s2x", s2x), zap.Int("e2x", e2x))
 
