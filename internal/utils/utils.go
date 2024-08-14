@@ -51,3 +51,7 @@ func AssertEquals[T comparable](a, b T) {
 		panic(errors.New("not equals"))
 	}
 }
+
+func FALSE() bool {
+	return false
+}

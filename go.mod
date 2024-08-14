@@ -10,7 +10,7 @@ require (
 	github.com/yyle88/formatgo v1.0.4
 	github.com/yyle88/gormcngen v1.0.16
 	github.com/yyle88/runpath v1.0.4
-	github.com/yyle88/syntaxgo v0.0.19
+	github.com/yyle88/syntaxgo v0.0.20
 	github.com/yyle88/zaplog v0.0.7
 	go.uber.org/zap v1.27.0
 	gorm.io/driver/sqlite v1.5.6

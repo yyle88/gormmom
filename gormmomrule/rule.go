@@ -15,6 +15,8 @@ const (
 	S30U RULE = "S30U"
 	S63  RULE = "S63"
 	S63U RULE = "S63U"
+
+	DEFAULT RULE = S63
 )
 
 // 映射验证函数

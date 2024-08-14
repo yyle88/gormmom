@@ -24,14 +24,16 @@ type Config struct {
 	defaultRule gormmomrule.RULE //默认检查规则
 	nameFuncMap map[gormmomrule.RULE]func(string) string
 	skipAbc123  bool //是否跳过简单字段，有的字段虽然没有配置名称或者规则，但是它满足简单字段，就也不做任何处理
+	genIdxName  bool
 }
 
 func NewConfig() *Config {
 	return &Config{
 		ruleTagName: "mom",
-		defaultRule: gormmomrule.S63, //默认检查规则，就是查看是不是63个合法字符（即字母数组下划线等）
+		defaultRule: gormmomrule.DEFAULT, //默认检查规则，就是查看是不是63个合法字符（即字母数组下划线等）
 		nameFuncMap: make(map[gormmomrule.RULE]func(string) string),
 		skipAbc123:  true,
+		genIdxName:  true,
 	}
 }
 
@@ -52,6 +54,11 @@ func (cfg *Config) SetNameFuncMap(nameFuncMap map[gormmomrule.RULE]func(string) 
 
 func (cfg *Config) SetSkipSimple(skipSimple bool) *Config {
 	cfg.skipAbc123 = skipSimple
+	return cfg
+}
+
+func (cfg *Config) SetGenIdxName(genIdxName bool) *Config {
+	cfg.genIdxName = genIdxName
 	return cfg
 }
 
@@ -101,7 +108,7 @@ func (cfg *Config) GenSource(param *Param) []byte {
 
 			if field.Tag == nil {
 				zaplog.LOG.Debug("NO TAG", zap.String("struct_name", nameIdent.Name))
-				if cfg.skipAbc123 && gormmomrule.S63.Validate(schemaField.DBName) {
+				if cfg.skipAbc123 && gormmomrule.DEFAULT.Validate(schemaField.DBName) {
 					zaplog.LOG.Debug("SKIP SIMPLE FIELD", zap.String("struct_name", nameIdent.Name))
 					continue
 				}
@@ -130,7 +137,7 @@ func (cfg *Config) GenSource(param *Param) []byte {
 						code: changeTag,
 					})
 				} else {
-					if cfg.skipAbc123 && gormmomrule.S63.Validate(schemaField.DBName) {
+					if cfg.skipAbc123 && gormmomrule.DEFAULT.Validate(schemaField.DBName) {
 						zaplog.LOG.Debug("SKIP SIMPLE FIELD", zap.String("struct_name", nameIdent.Name))
 						continue
 					}
@@ -155,12 +162,14 @@ func (cfg *Config) GenSource(param *Param) []byte {
 		zaplog.LOG.Debug("check_column:", zap.String("name", rep.name), zap.String("code", rep.code))
 	}
 
-	//这里增加个新逻辑，就是单列索引的索引名称不正确，需要也校正索引名，因此这个函数会补充标签内容
-	cfg.rewriteIndexNames(param, replacers)
+	if cfg.genIdxName {
+		//这里增加个新逻辑，就是单列索引的索引名称不正确，需要也校正索引名，因此这个函数会补充标签内容
+		cfg.rewriteIndexNames(param, replacers)
 
-	zaplog.LOG.Debug("change_index_names")
-	for _, rep := range replacers {
-		zaplog.LOG.Debug("check_index:", zap.String("name", rep.name), zap.String("code", rep.code))
+		zaplog.LOG.Debug("change_index_names")
+		for _, rep := range replacers {
+			zaplog.LOG.Debug("check_index:", zap.String("name", rep.name), zap.String("code", rep.code))
+		}
 	}
 
 	//需要翻转下从后往前替换，因为替换以后源码会变，假如从前往后替换坐标就对不上啦，而从后往前替换则不存在这个问题
@@ -228,15 +237,14 @@ func (cfg *Config) newFixGormTag(schemaField *schema.Field, tag string, rule gor
 }
 
 func (cfg *Config) newFixRuleTag(tag string, rule gormmomrule.RULE) string {
-	var ruleName = string(rule)
-	zaplog.LOG.Debug("new_fix_rule_tag", zap.String("rule_name", ruleName))
+	zaplog.LOG.Debug("new_fix_rule_tag", zap.String("rule_name", string(rule)))
 
 	tagValue, sdx, edx := syntaxgo_tag.ExtractTagValueIndex(tag, cfg.ruleTagName)
 	if sdx < 0 || edx < 0 { //表示没找到 gorm 相关的内容
 		if tagValue != "" {
 			zaplog.LOG.Panic("IMPOSSIBLE")
 		}
-		part := fmt.Sprintf(`%s:"rule:%s;"`, cfg.ruleTagName, ruleName)
+		part := fmt.Sprintf(`%s:"rule:%s;"`, cfg.ruleTagName, string(rule))
 		if rch := tag[len(tag)-2]; rch != ' ' && rch != '`' {
 			part = " " + part //说明前面还有别的标签
 		}
@@ -244,7 +252,7 @@ func (cfg *Config) newFixRuleTag(tag string, rule gormmomrule.RULE) string {
 		return tag[:p] + part + tag[p:]
 	}
 	//设置这个标签的这个字段的值
-	return cfg.newFixTagField(tag, cfg.ruleTagName, "rule", ruleName, TOP)
+	return cfg.newFixTagField(tag, cfg.ruleTagName, "rule", string(rule), TOP)
 }
 
 type enumInsertLocation string
