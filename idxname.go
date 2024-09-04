@@ -1,10 +1,9 @@
 package gormmom
 
 import (
-	"strings"
+	"github.com/yyle88/gormmom/gormidxname"
 	"unicode/utf8"
 
-	"github.com/yyle88/gormmom/gormmomrule"
 	"github.com/yyle88/gormmom/internal/utils"
 	"github.com/yyle88/syntaxgo/syntaxgo_tag"
 	"github.com/yyle88/zaplog"
@@ -51,72 +50,61 @@ func (cfg *Config) rewriteSingleColumnIndex(param *Param, schemaIndex schema.Ind
 	utils.AssertOK(newColumnName)
 	zaplog.LOG.Debug("new_column_name", zap.String("name", change.name), zap.String("new_column_name", newColumnName))
 
-	var whichRuleFieldName string
+	//这个是规则的枚举名称
+	var whichEnumCodeName string
 	switch schemaIndex.Class {
 	case "":
-		whichRuleFieldName = "idx"
+		whichEnumCodeName = "idx"
 	case "UNIQUE":
-		whichRuleFieldName = "udx"
+		whichEnumCodeName = "udx"
 	default:
-		whichRuleFieldName = ""
+		whichEnumCodeName = ""
 	}
 
-	var ruleEnum gormmomrule.RULE
-	if whichRuleFieldName != "" {
-		rule, exist := cfg.extractIndexRuleEnum(change, whichRuleFieldName)
-		if !exist { //就是不存在 使用默认值 的情况
-			match := rule.Validate(schemaIndex.Name)
+	var idxNameEnum gormidxname.IdxNAME
+	if whichEnumCodeName != "" {
+		exist := false
+		idxNameEnum, exist = cfg.extractIdxNameEnum(change, whichEnumCodeName)
+		if !exist {
+			//就是不存在时 使用默认值 的情况
+			idxNameEnum = gormidxname.DEFAULT
+			idxNameImp, ok := cfg.idxNameMap[idxNameEnum]
+			utils.AssertOK(ok)
+
+			match := idxNameImp.CheckIdxName(schemaIndex.Name)
 			zaplog.LOG.Debug("check_idx_match", zap.Bool("match", match))
 			if !match {
 				//当没有配置规则，而默认规则检查不正确时，就需要把规则名设置到标签里
-				change.code = cfg.newFixTagField(change.code, cfg.ruleTagName, whichRuleFieldName, string(rule), END)
+				change.code = cfg.newFixTagField(change.code, cfg.ruleTagName, whichEnumCodeName, string(idxNameEnum), END)
 			} else {
 				//当没有配置规则，而且能够满足检查时，就不做任何事情（不要破坏用户自己配置的正确索引名）
 				return
 			}
 		}
-		ruleEnum = rule
 	} else {
-		ruleEnum = gormmomrule.DEFAULT
+		//就是不确定时 使用默认值 的情况
+		idxNameEnum = gormidxname.DEFAULT
 	}
 
-	subIndexName := gormmomrule.MakeName(ruleEnum, change.name, cfg.nameFuncMap)
-	utils.AssertOK(subIndexName)
-	zaplog.LOG.Debug("sub_index_name", zap.String("sub_index_name", subIndexName))
-
-	var tagFieldName string
-	var newIndexName string
-	switch schemaIndex.Class {
-	case "":
-		utils.AssertOK(whichRuleFieldName)
-
-		tagFieldName = "index"
-		newIndexName = makeIndexName("idx", param.sch.Table, subIndexName)
-	case "UNIQUE":
-		utils.AssertOK(whichRuleFieldName)
-
-		tagFieldName = "uniqueIndex"
-		newIndexName = makeIndexName("udx", param.sch.Table, subIndexName)
-	default:
-		newIndexName = makeIndexName("idx", param.sch.Table, subIndexName)
-
-		if newIndexName != schemaIndex.Name { //这种情况暂时没有遇到，依然是暂不处理
-			zaplog.LOG.Warn("new_index_name", zap.String("new_index_name", newIndexName))
-		}
-
-		if !ruleEnum.Validate(schemaIndex.Name) {
-			zaplog.LOG.Warn("idx_not_match", zap.String("old_index_name", schemaIndex.Name))
-		}
-
-		return //这种情况就不处理啦，打出告警日志让开发者手动解决
+	idxNameImp, ok := cfg.idxNameMap[idxNameEnum]
+	utils.AssertOK(ok)
+	idxGenRes := idxNameImp.GenIndexName(schemaIndex, param.sch.Table, change.name, newColumnName)
+	utils.AssertOK(idxGenRes)
+	if idxGenRes.NewIndexName == "" {
+		return
 	}
-	utils.AssertOK(newIndexName)
-	zaplog.LOG.Debug("new_index_name", zap.String("new_index_name", newIndexName))
-	if newIndexName == schemaIndex.Name {
+	if idxGenRes.TagFieldName == "" {
+		return
+	}
+	zaplog.LOG.Debug("compare", zap.String("which_enum_code_name", whichEnumCodeName), zap.String("enum_code_name", idxGenRes.EnumCodeName))
+	utils.AssertEquals(whichEnumCodeName, idxGenRes.EnumCodeName)
+
+	zaplog.LOG.Debug("new_index_name", zap.String("new_index_name", idxGenRes.NewIndexName))
+	if idxGenRes.NewIndexName == schemaIndex.Name {
 		return
 	}
 
-	zaplog.LOG.Debug("tag_field_name", zap.String("tag_field_name", tagFieldName))
+	zaplog.LOG.Debug("tag_field_name", zap.String("tag_field_name", idxGenRes.TagFieldName))
 
 	contentInGormQuotesValue, stx, etx := syntaxgo_tag.ExtractTagValueIndex(change.code, "gorm")
 	utils.AssertOK(stx >= 0)
@@ -129,21 +117,21 @@ func (cfg *Config) rewriteSingleColumnIndex(param *Param, schemaIndex schema.Ind
 		//假如连 UTF-8 编码 都不满足，就说明这个索引名是完全错误的
 		if utf8.ValidString(schemaIndex.Name) {
 			//因为这个正则不能匹配非 UTF-8 编码，在前面先判断编码是否正确，编码正确以后再匹配索引名
-			sfx, efx := syntaxgo_tag.ExtractFieldEqualsValueIndex(contentInGormQuotesValue, tagFieldName, schemaIndex.Name)
+			sfx, efx := syntaxgo_tag.ExtractFieldEqualsValueIndex(contentInGormQuotesValue, idxGenRes.TagFieldName, schemaIndex.Name)
 			if sfx > 0 && efx > 0 {
 				spx := stx + sfx //把起点坐标补上前面的
 				epx := stx + efx
-				change.code = change.code[:spx] + newIndexName + change.code[epx:]
+				change.code = change.code[:spx] + idxGenRes.NewIndexName + change.code[epx:]
 				changed = true
 			}
 		}
 	}
 	if !changed {
-		sfx, efx := syntaxgo_tag.ExtractNoValueFieldNameIndex(contentInGormQuotesValue, tagFieldName)
+		sfx, efx := syntaxgo_tag.ExtractNoValueFieldNameIndex(contentInGormQuotesValue, idxGenRes.TagFieldName)
 		if sfx > 0 && efx > 0 {
 			spx := stx + sfx //把起点坐标补上前面的
 			epx := stx + efx
-			change.code = change.code[:spx] + tagFieldName + ":" + newIndexName + change.code[epx:]
+			change.code = change.code[:spx] + idxGenRes.TagFieldName + ":" + idxGenRes.NewIndexName + change.code[epx:]
 			changed = true
 		}
 	}
@@ -154,16 +142,12 @@ func (cfg *Config) rewriteSingleColumnIndex(param *Param, schemaIndex schema.Ind
 	zaplog.LOG.Debug("new_tag_string", zap.String("new_tag_string", change.code))
 }
 
-func (cfg *Config) extractIndexRuleEnum(change *changeType, ruleFieldName string) (gormmomrule.RULE, bool) {
+func (cfg *Config) extractIdxNameEnum(change *changeType, ruleFieldName string) (gormidxname.IdxNAME, bool) {
 	var name = cfg.extractSomeField(change.code, cfg.ruleTagName, ruleFieldName)
 	if name == "" {
-		return gormmomrule.DEFAULT, false
+		return gormidxname.DEFAULT, false
 	}
 	utils.AssertOK(name)
 	zaplog.LOG.Debug("index_rule_name", zap.String("index_rule_name", name))
-	return gormmomrule.RULE(name), true
-}
-
-func makeIndexName(prefix string, tableName string, subIndexName string) string {
-	return strings.ReplaceAll(strings.Join([]string{prefix, tableName, subIndexName}, "_"), ".", "_")
+	return gormidxname.IdxNAME(name), true
 }

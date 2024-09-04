@@ -2,6 +2,7 @@ package gormmom
 
 import (
 	"fmt"
+	"github.com/yyle88/gormmom/gormidxname"
 	"go/ast"
 	"go/token"
 	"os"
@@ -25,6 +26,7 @@ type Config struct {
 	nameFuncMap map[gormmomrule.RULE]func(string) string
 	skipAbc123  bool //是否跳过简单字段，有的字段虽然没有配置名称或者规则，但是它满足简单字段，就也不做任何处理
 	genIdxName  bool
+	idxNameMap  map[gormidxname.IdxNAME]gormidxname.IdxNameIFace
 }
 
 func NewConfig() *Config {
@@ -34,6 +36,7 @@ func NewConfig() *Config {
 		nameFuncMap: make(map[gormmomrule.RULE]func(string) string),
 		skipAbc123:  true,
 		genIdxName:  true,
+		idxNameMap:  gormidxname.GetPresetNameImpMap(),
 	}
 }
 

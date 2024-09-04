@@ -21,13 +21,13 @@ func (rule RULE) MakeName(fieldName string) string {
 	panic(erero.Errorf("no validation function. fieldName=%s rule_name=%s", fieldName, string(rule)))
 }
 
-func MakeName(rule RULE, columnName string, customMakeNames map[RULE]func(string) string) string {
+func MakeName(rule RULE, fieldName string, customMakeNames map[RULE]func(string) string) string {
 	if len(customMakeNames) > 0 { //优先使用自定义的函数
 		if makeFunc, exist := customMakeNames[rule]; exist {
-			return makeFunc(columnName)
+			return makeFunc(fieldName)
 		}
 	}
-	return rule.MakeName(columnName)
+	return rule.MakeName(fieldName)
 }
 
 func makeS30(fieldName string) string {
