@@ -1,4 +1,4 @@
-package enctohex
+package rune2hex
 
 import (
 	"testing"

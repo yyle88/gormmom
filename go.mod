@@ -7,7 +7,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/yyle88/done v1.0.8
 	github.com/yyle88/erero v1.0.10
-	github.com/yyle88/formatgo v1.0.7
+	github.com/yyle88/formatgo v1.0.8
 	github.com/yyle88/gormcngen v1.0.18
 	github.com/yyle88/runpath v1.0.5
 	github.com/yyle88/syntaxgo v0.0.23

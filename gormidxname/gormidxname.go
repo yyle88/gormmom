@@ -10,6 +10,7 @@ type IdxNAME string
 
 const (
 	CNM IdxNAME = "CNM" //表示使用 column name 作为拼接索引名的规则
+	CNU IdxNAME = "CNU" //表示使用 column name 作为拼接索引名的规则，但后缀是大写字母的
 
 	DEFAULT IdxNAME = CNM
 )
@@ -21,6 +22,7 @@ type IdxNameIFace interface {
 
 var presetNameImpMap = map[IdxNAME]IdxNameIFace{
 	CNM: &nameGenUseCnmImp{},
+	CNU: &nameGenUseCnuImp{}, //只是凑数用的
 }
 
 func GetPresetNameImpMap() map[IdxNAME]IdxNameIFace {

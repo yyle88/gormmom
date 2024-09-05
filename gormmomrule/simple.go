@@ -5,7 +5,7 @@ import (
 	"unicode"
 
 	"github.com/yyle88/erero"
-	"github.com/yyle88/gormmom/internal/enctohex"
+	"github.com/yyle88/gormmom/internal/rune2hex"
 )
 
 // 这是个简单的替换逻辑，能把特殊符号转换为相应的字母（但似乎也没有这个必要，因为字段名也不会包含这些字符）
@@ -68,7 +68,7 @@ func makeName(fieldName string) string {
 				res.WriteString("column")
 				res.WriteRune('_')
 			}
-			res.WriteString(enctohex.Uint32ToHex4Los(c))
+			res.WriteString(rune2hex.Uint32ToHex4Los(c))
 			preSimple = false
 		}
 	}
