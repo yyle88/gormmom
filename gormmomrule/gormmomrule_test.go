@@ -6,10 +6,20 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestRule_Validate(t *testing.T) {
-	require.True(t, S63.Validate("abc"))
+func TestName_Check(t *testing.T) {
+	require.True(t, presetNameImpMap[S63].CheckName("abc"))
 }
 
-func TestValidate(t *testing.T) {
-	require.True(t, Validate(S63, "abc", map[RULE]func(string) bool{}))
+func TestName_Check_2(t *testing.T) {
+	require.True(t, presetNameImpMap[S63U].CheckName("ABC"))
+}
+
+func TestName_Make(t *testing.T) {
+	t.Log(presetNameImpMap[S30].GenNewCnm("v杨亦乐"))
+	t.Log(presetNameImpMap[S30].GenNewCnm("v刘亦菲"))
+	t.Log(presetNameImpMap[S30].GenNewCnm("v古天乐"))
+}
+
+func TestName_Make_2(t *testing.T) {
+	t.Log(presetNameImpMap[S63].GenNewCnm("啦啦啦"))
 }

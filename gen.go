@@ -2,7 +2,6 @@ package gormmom
 
 import (
 	"fmt"
-	"github.com/yyle88/gormmom/gormidxname"
 	"go/ast"
 	"go/token"
 	"os"
@@ -11,6 +10,7 @@ import (
 	"github.com/yyle88/done"
 	"github.com/yyle88/erero"
 	"github.com/yyle88/formatgo"
+	"github.com/yyle88/gormmom/gormidxname"
 	"github.com/yyle88/gormmom/gormmomrule"
 	"github.com/yyle88/gormmom/internal/utils"
 	"github.com/yyle88/syntaxgo/syntaxgo_ast"
@@ -22,8 +22,8 @@ import (
 
 type Config struct {
 	ruleTagName string
-	defaultRule gormmomrule.RULE //默认检查规则
-	nameFuncMap map[gormmomrule.RULE]func(string) string
+	defaultRule gormmomrule.MomRULE //默认检查规则
+	nameGenMap  map[gormmomrule.MomRULE]gormmomrule.CnmMakeIFace
 	skipAbc123  bool //是否跳过简单字段，有的字段虽然没有配置名称或者规则，但是它满足简单字段，就也不做任何处理
 	genIdxName  bool
 	idxNameMap  map[gormidxname.IdxNAME]gormidxname.IdxNameIFace
@@ -33,7 +33,7 @@ func NewConfig() *Config {
 	return &Config{
 		ruleTagName: "mom",
 		defaultRule: gormmomrule.DEFAULT, //默认检查规则，就是查看是不是63个合法字符（即字母数组下划线等）
-		nameFuncMap: make(map[gormmomrule.RULE]func(string) string),
+		nameGenMap:  gormmomrule.GetPresetCnmMakeMap(),
 		skipAbc123:  true,
 		genIdxName:  true,
 		idxNameMap:  gormidxname.GetPresetNameImpMap(),
@@ -45,13 +45,13 @@ func (cfg *Config) SetRuleTagName(ruleTagName string) *Config {
 	return cfg
 }
 
-func (cfg *Config) SetDefaultRule(defaultRule gormmomrule.RULE) *Config {
+func (cfg *Config) SetDefaultRule(defaultRule gormmomrule.MomRULE) *Config {
 	cfg.defaultRule = defaultRule
 	return cfg
 }
 
-func (cfg *Config) SetNameFuncMap(nameFuncMap map[gormmomrule.RULE]func(string) string) *Config {
-	cfg.nameFuncMap = nameFuncMap
+func (cfg *Config) SetNameGenImp(momRULE gormmomrule.MomRULE, cnmMakeImp gormmomrule.CnmMakeIFace) *Config {
+	cfg.nameGenMap[momRULE] = cnmMakeImp
 	return cfg
 }
 
@@ -62,6 +62,11 @@ func (cfg *Config) SetSkipSimple(skipSimple bool) *Config {
 
 func (cfg *Config) SetGenIdxName(genIdxName bool) *Config {
 	cfg.genIdxName = genIdxName
+	return cfg
+}
+
+func (cfg *Config) SetIdxNameImp(rule gormidxname.IdxNAME, idxNameImp gormidxname.IdxNameIFace) *Config {
+	cfg.idxNameMap[rule] = idxNameImp
 	return cfg
 }
 
@@ -111,18 +116,18 @@ func (cfg *Config) GenSource(param *Param) []byte {
 
 			if field.Tag == nil {
 				zaplog.LOG.Debug("NO TAG", zap.String("struct_name", nameIdent.Name))
-				if cfg.skipAbc123 && gormmomrule.DEFAULT.Validate(schemaField.DBName) {
+				if cfg.skipAbc123 && cfg.nameGenMap[gormmomrule.DEFAULT].CheckName(schemaField.DBName) {
 					zaplog.LOG.Debug("SKIP SIMPLE FIELD", zap.String("struct_name", nameIdent.Name))
 					continue
 				}
-				rule := cfg.defaultRule
-				if !rule.Validate(schemaField.DBName) {
+				momRULE := cfg.defaultRule
+				if !cfg.nameGenMap[momRULE].CheckName(schemaField.DBName) {
 					if len(field.Names) >= 2 { //比如 a,b int 这种两个字段在一起，但其中一个字段的列名不正确时，就没法自动解决啦（其实有办法但不想实现，因为代价较大而没有收益）
 						const reason = "CAN NOT HANDLE THIS SITUATION"
 						zaplog.LOG.Panic(reason, zap.String("struct_name", nameIdent.Name))
 						panic(reason) //这种情况下当有错时，就不处理这种情况，就需要程序员先把两个字段定义到两行里
 					}
-					changeTag := cfg.newFixTagCode(schemaField, "``", rule) //这里应该走创建标签的逻辑，但和修改标签的逻辑是相同的
+					changeTag := cfg.newFixTagCode(schemaField, "``", momRULE) //这里应该走创建标签的逻辑，但和修改标签的逻辑是相同的
 					replacers = append(replacers, &changeType{
 						name: nameIdent.Name,
 						node: syntaxgo_ast.NewNode(field.End(), field.End()), //在尾部插入新的标签，要紧贴字段而且在换行符前面
@@ -131,22 +136,22 @@ func (cfg *Config) GenSource(param *Param) []byte {
 				}
 			} else {
 				if ruleName := cfg.extractRuleField(field.Tag.Value); ruleName != "" {
-					rule := gormmomrule.RULE(ruleName)
-					zaplog.LOG.Debug("process", zap.String("rule", string(rule)))
-					changeTag := cfg.newFixTagCode(schemaField, field.Tag.Value, rule)
+					momRULE := gormmomrule.MomRULE(ruleName)
+					zaplog.LOG.Debug("process", zap.String("rule", string(momRULE)))
+					changeTag := cfg.newFixTagCode(schemaField, field.Tag.Value, momRULE)
 					replacers = append(replacers, &changeType{
 						name: nameIdent.Name,
 						node: field.Tag, //完整替换原来的标签
 						code: changeTag,
 					})
 				} else {
-					if cfg.skipAbc123 && gormmomrule.DEFAULT.Validate(schemaField.DBName) {
+					if cfg.skipAbc123 && cfg.nameGenMap[gormmomrule.DEFAULT].CheckName(schemaField.DBName) {
 						zaplog.LOG.Debug("SKIP SIMPLE FIELD", zap.String("struct_name", nameIdent.Name))
 						continue
 					}
-					rule := cfg.defaultRule
-					if !rule.Validate(schemaField.DBName) { //按照比较宽泛的规则也校验不过的时候就需要修正字段名
-						changeTag := cfg.newFixTagCode(schemaField, field.Tag.Value, rule)
+					momRULE := cfg.defaultRule
+					if !cfg.nameGenMap[momRULE].CheckName(schemaField.DBName) { //按照比较宽泛的规则也校验不过的时候就需要修正字段名
+						changeTag := cfg.newFixTagCode(schemaField, field.Tag.Value, momRULE)
 						replacers = append(replacers, &changeType{
 							name: nameIdent.Name,
 							node: field.Tag, //完整替换原来的标签
@@ -208,19 +213,19 @@ func (cfg *Config) extractSomeField(tagCode string, key1 string, key2 string) st
 	return tagField
 }
 
-func (cfg *Config) newFixTagCode(schemaField *schema.Field, tag string, rule gormmomrule.RULE) string {
+func (cfg *Config) newFixTagCode(schemaField *schema.Field, tag string, momRULE gormmomrule.MomRULE) string {
 	zaplog.LOG.Debug("new_fix_tag_code", zap.String("name", schemaField.Name), zap.String("tag", tag))
 	//在 gorm 里修改 column 内容
-	newTag := cfg.newFixGormTag(schemaField, tag, rule)
+	newTag := cfg.newFixGormTag(schemaField, tag, momRULE)
 	//在 规则 里修改 rule 内容
-	newTag = cfg.newFixRuleTag(newTag, rule)
+	newTag = cfg.newFixRuleTag(newTag, momRULE)
 	//这是替换后的结果，即替换整个标签内容，获得新的完整标签内容
 	zaplog.LOG.Debug("new_fix_tag_code", zap.String("name", schemaField.Name), zap.String("new_tag", newTag))
 	return newTag
 }
 
-func (cfg *Config) newFixGormTag(schemaField *schema.Field, tag string, rule gormmomrule.RULE) string {
-	var columnName = gormmomrule.MakeName(rule, schemaField.Name, cfg.nameFuncMap)
+func (cfg *Config) newFixGormTag(schemaField *schema.Field, tag string, momRULE gormmomrule.MomRULE) string {
+	var columnName = cfg.nameGenMap[momRULE].GenNewCnm(schemaField.Name)
 	zaplog.LOG.Debug("new_fix_gorm_tag", zap.String("name", schemaField.Name), zap.String("column_name", columnName))
 
 	tagValue, sdx, edx := syntaxgo_tag.ExtractTagValueIndex(tag, "gorm")
@@ -239,15 +244,15 @@ func (cfg *Config) newFixGormTag(schemaField *schema.Field, tag string, rule gor
 	return cfg.newFixTagField(tag, "gorm", "column", columnName, TOP)
 }
 
-func (cfg *Config) newFixRuleTag(tag string, rule gormmomrule.RULE) string {
-	zaplog.LOG.Debug("new_fix_rule_tag", zap.String("rule_name", string(rule)))
+func (cfg *Config) newFixRuleTag(tag string, momRULE gormmomrule.MomRULE) string {
+	zaplog.LOG.Debug("new_fix_rule_tag", zap.String("rule_name", string(momRULE)))
 
 	tagValue, sdx, edx := syntaxgo_tag.ExtractTagValueIndex(tag, cfg.ruleTagName)
 	if sdx < 0 || edx < 0 { //表示没找到 gorm 相关的内容
 		if tagValue != "" {
 			zaplog.LOG.Panic("IMPOSSIBLE")
 		}
-		part := fmt.Sprintf(`%s:"rule:%s;"`, cfg.ruleTagName, string(rule))
+		part := fmt.Sprintf(`%s:"rule:%s;"`, cfg.ruleTagName, string(momRULE))
 		if rch := tag[len(tag)-2]; rch != ' ' && rch != '`' {
 			part = " " + part //说明前面还有别的标签
 		}
@@ -255,7 +260,7 @@ func (cfg *Config) newFixRuleTag(tag string, rule gormmomrule.RULE) string {
 		return tag[:p] + part + tag[p:]
 	}
 	//设置这个标签的这个字段的值
-	return cfg.newFixTagField(tag, cfg.ruleTagName, "rule", string(rule), TOP)
+	return cfg.newFixTagField(tag, cfg.ruleTagName, "rule", string(momRULE), TOP)
 }
 
 type enumInsertLocation string

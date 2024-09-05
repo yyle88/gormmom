@@ -1,47 +1,34 @@
 package gormmomrule
 
-import (
-	"regexp"
-
-	"github.com/yyle88/erero"
-)
-
 // nolint:no-doc
 // 自定义枚举类型，表示使用何种字段验证方式来验证，由于不同的DB的列名规则是不同的，因此通常建议是取各种DB的交集
-type RULE string
+type MomRULE string
 
 const (
-	S30  RULE = "S30"
-	S30U RULE = "S30U"
-	S63  RULE = "S63"
-	S63U RULE = "S63U"
+	S30  MomRULE = "S30"
+	S30U MomRULE = "S30U"
+	S63  MomRULE = "S63"
+	S63U MomRULE = "S63U"
 
-	DEFAULT RULE = S63
+	DEFAULT MomRULE = S63
 )
 
-// 映射验证函数
-var validationFunctions = map[RULE]func(string) bool{
-	S30:  regexp.MustCompile(`^[a-zA-Z0-9_]{1,30}$`).MatchString, //试过名字前带个前导空格 `gorm:"column: name;"` 也是可以的，但这个规则里不允许这种情况
-	S30U: regexp.MustCompile(`^[A-Z0-9_]{1,30}$`).MatchString,
-	S63:  regexp.MustCompile(`^[a-zA-Z0-9_]{1,63}$`).MatchString,
-	S63U: regexp.MustCompile(`^[A-Z0-9_]{1,63}$`).MatchString,
+type CnmMakeIFace interface {
+	CheckName(columnName string) bool
+	GenNewCnm(fieldName string) string
 }
 
-func (rule RULE) Validate(columnName string) bool {
-	if check, exist := validationFunctions[rule]; exist {
-		return check(columnName)
-	}
-	panic(erero.Errorf("no validation function. column_name=%s rule_name=%s", columnName, string(rule)))
+var presetNameImpMap = map[MomRULE]CnmMakeIFace{
+	S30:  &nameS30Imp{},
+	S30U: &nameS30UImp{},
+	S63:  &nameS63Imp{},
+	S63U: &nameS63UImp{},
 }
 
-func Validate(rule RULE, columnName string, validationsMap map[RULE]func(string) bool) bool {
-	if rule == "" {
-		return true
+func GetPresetCnmMakeMap() map[MomRULE]CnmMakeIFace {
+	var mp = make(map[MomRULE]CnmMakeIFace, len(presetNameImpMap))
+	for k, v := range presetNameImpMap {
+		mp[k] = v
 	}
-	if len(validationsMap) > 0 { //优先使用自定义的函数
-		if check, exist := validationsMap[rule]; exist {
-			return check(columnName)
-		}
-	}
-	return rule.Validate(columnName)
+	return mp
 }

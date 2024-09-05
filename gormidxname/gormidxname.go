@@ -20,7 +20,7 @@ type IdxNameIFace interface {
 }
 
 var presetNameImpMap = map[IdxNAME]IdxNameIFace{
-	CNM: &nameGenFromColumnName{},
+	CNM: &nameGenUseCnmImp{},
 }
 
 func GetPresetNameImpMap() map[IdxNAME]IdxNameIFace {

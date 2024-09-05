@@ -4,9 +4,11 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/yyle88/erero"
 	"github.com/yyle88/gormmom/internal/enctohex"
 )
 
+// 这是个简单的替换逻辑，能把特殊符号转换为相应的字母（但似乎也没有这个必要，因为字段名也不会包含这些字符）
 var replacementsMap = map[string]string{
 	"(": "x",
 	")": "x",
@@ -71,4 +73,11 @@ func makeName(fieldName string) string {
 		}
 	}
 	return res.String()
+}
+
+func checkLen(name string, size int) string {
+	if len(name) > size {
+		panic(erero.Errorf("column_name=%v is too long. len=%v > size=%v", name, len(name), size))
+	}
+	return name
 }

@@ -1,9 +1,9 @@
 package gormmom
 
 import (
-	"github.com/yyle88/gormmom/gormidxname"
 	"unicode/utf8"
 
+	"github.com/yyle88/gormmom/gormidxname"
 	"github.com/yyle88/gormmom/internal/utils"
 	"github.com/yyle88/syntaxgo/syntaxgo_tag"
 	"github.com/yyle88/zaplog"
@@ -88,23 +88,23 @@ func (cfg *Config) rewriteSingleColumnIndex(param *Param, schemaIndex schema.Ind
 
 	idxNameImp, ok := cfg.idxNameMap[idxNameEnum]
 	utils.AssertOK(ok)
-	idxGenRes := idxNameImp.GenIndexName(schemaIndex, param.sch.Table, change.name, newColumnName)
-	utils.AssertOK(idxGenRes)
-	if idxGenRes.NewIndexName == "" {
+	newInm := idxNameImp.GenIndexName(schemaIndex, param.sch.Table, change.name, newColumnName)
+	utils.AssertOK(newInm)
+	if newInm.NewIndexName == "" {
 		return
 	}
-	if idxGenRes.TagFieldName == "" {
+	if newInm.TagFieldName == "" {
 		return
 	}
-	zaplog.LOG.Debug("compare", zap.String("which_enum_code_name", whichEnumCodeName), zap.String("enum_code_name", idxGenRes.EnumCodeName))
-	utils.AssertEquals(whichEnumCodeName, idxGenRes.EnumCodeName)
+	zaplog.LOG.Debug("compare", zap.String("which_enum_code_name", whichEnumCodeName), zap.String("enum_code_name", newInm.EnumCodeName))
+	utils.AssertEquals(whichEnumCodeName, newInm.EnumCodeName)
 
-	zaplog.LOG.Debug("new_index_name", zap.String("new_index_name", idxGenRes.NewIndexName))
-	if idxGenRes.NewIndexName == schemaIndex.Name {
+	zaplog.LOG.Debug("new_index_name", zap.String("new_index_name", newInm.NewIndexName))
+	if newInm.NewIndexName == schemaIndex.Name {
 		return
 	}
 
-	zaplog.LOG.Debug("tag_field_name", zap.String("tag_field_name", idxGenRes.TagFieldName))
+	zaplog.LOG.Debug("tag_field_name", zap.String("tag_field_name", newInm.TagFieldName))
 
 	contentInGormQuotesValue, stx, etx := syntaxgo_tag.ExtractTagValueIndex(change.code, "gorm")
 	utils.AssertOK(stx >= 0)
@@ -117,21 +117,21 @@ func (cfg *Config) rewriteSingleColumnIndex(param *Param, schemaIndex schema.Ind
 		//假如连 UTF-8 编码 都不满足，就说明这个索引名是完全错误的
 		if utf8.ValidString(schemaIndex.Name) {
 			//因为这个正则不能匹配非 UTF-8 编码，在前面先判断编码是否正确，编码正确以后再匹配索引名
-			sfx, efx := syntaxgo_tag.ExtractFieldEqualsValueIndex(contentInGormQuotesValue, idxGenRes.TagFieldName, schemaIndex.Name)
+			sfx, efx := syntaxgo_tag.ExtractFieldEqualsValueIndex(contentInGormQuotesValue, newInm.TagFieldName, schemaIndex.Name)
 			if sfx > 0 && efx > 0 {
 				spx := stx + sfx //把起点坐标补上前面的
 				epx := stx + efx
-				change.code = change.code[:spx] + idxGenRes.NewIndexName + change.code[epx:]
+				change.code = change.code[:spx] + newInm.NewIndexName + change.code[epx:]
 				changed = true
 			}
 		}
 	}
 	if !changed {
-		sfx, efx := syntaxgo_tag.ExtractNoValueFieldNameIndex(contentInGormQuotesValue, idxGenRes.TagFieldName)
+		sfx, efx := syntaxgo_tag.ExtractNoValueFieldNameIndex(contentInGormQuotesValue, newInm.TagFieldName)
 		if sfx > 0 && efx > 0 {
 			spx := stx + sfx //把起点坐标补上前面的
 			epx := stx + efx
-			change.code = change.code[:spx] + idxGenRes.TagFieldName + ":" + idxGenRes.NewIndexName + change.code[epx:]
+			change.code = change.code[:spx] + newInm.TagFieldName + ":" + newInm.NewIndexName + change.code[epx:]
 			changed = true
 		}
 	}
