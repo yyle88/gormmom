@@ -21,5 +21,7 @@ func TestName_Make(t *testing.T) {
 }
 
 func TestName_Make_2(t *testing.T) {
-	t.Log(presetNameImpMap[S63].GenNewCnm("啦啦啦"))
+	t.Log(presetNameImpMap[S63U].GenNewCnm("v杨亦乐"))
+	t.Log(presetNameImpMap[S63U].GenNewCnm("v刘亦菲的亦"))
+	t.Log(presetNameImpMap[S63U].GenNewCnm("v古天乐的乐"))
 }

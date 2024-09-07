@@ -19,10 +19,10 @@ func (cfg *Config) checkCompositeIndex(indexName string, fields []schema.IndexOp
 	zaplog.LOG.Debug("check_composite_index", zap.String("index_name", indexName), zap.Int("field_size", len(fields)))
 }
 
-func (cfg *Config) rewriteIndexNames(param *Param, replacers []*changeType) {
-	var replacersMap = make(map[string]*changeType, len(replacers))
-	for _, rep := range replacers {
-		replacersMap[rep.name] = rep
+func (cfg *Config) rewriteIndexNames(param *Param, srcChanges []*changeType) {
+	var changesMap = make(map[string]*changeType, len(srcChanges))
+	for _, rep := range srcChanges {
+		changesMap[rep.vFieldName] = rep
 	}
 
 	schIndexes := param.sch.ParseIndexes()
@@ -31,7 +31,7 @@ func (cfg *Config) rewriteIndexNames(param *Param, replacers []*changeType) {
 		zaplog.LOG.Debug("foreach_index")
 		zaplog.LOG.Debug("check_a_index", zap.String("index_name", node.Name), zap.Int("field_size", len(node.Fields)))
 		if len(node.Fields) == 1 { //只检查单列索引，因为复合索引就得手写名称，因此没有问题
-			rep, ok := replacersMap[node.Fields[0].Name]
+			rep, ok := changesMap[node.Fields[0].Name]
 			if ok {
 				cfg.rewriteSingleColumnIndex(param, node, rep)
 			} else {
@@ -44,11 +44,11 @@ func (cfg *Config) rewriteIndexNames(param *Param, replacers []*changeType) {
 }
 
 func (cfg *Config) rewriteSingleColumnIndex(param *Param, schemaIndex schema.Index, change *changeType) {
-	zaplog.LOG.Debug("rewrite_single_column_index", zap.String("table_name", param.sch.Table), zap.String("field_name", change.name), zap.String("index_name", schemaIndex.Name), zap.String("index_class", schemaIndex.Class))
+	zaplog.LOG.Debug("rewrite_single_column_index", zap.String("table_name", param.sch.Table), zap.String("field_name", change.vFieldName), zap.String("index_name", schemaIndex.Name), zap.String("index_class", schemaIndex.Class))
 
-	newColumnName := cfg.extractSomeField(change.code, "gorm", "column")
+	newColumnName := cfg.extractSomeField(change.newTagCode, "gorm", "column")
 	utils.AssertOK(newColumnName)
-	zaplog.LOG.Debug("new_column_name", zap.String("name", change.name), zap.String("new_column_name", newColumnName))
+	zaplog.LOG.Debug("new_column_name", zap.String("name", change.vFieldName), zap.String("new_column_name", newColumnName))
 
 	//这个是规则的枚举名称
 	var whichEnumCodeName string
@@ -75,7 +75,7 @@ func (cfg *Config) rewriteSingleColumnIndex(param *Param, schemaIndex schema.Ind
 			zaplog.LOG.Debug("check_idx_match", zap.Bool("match", match))
 			if !match {
 				//当没有配置规则，而默认规则检查不正确时，就需要把规则名设置到标签里
-				change.code = cfg.newFixTagField(change.code, cfg.ruleTagName, whichEnumCodeName, string(idxNameEnum), END)
+				change.newTagCode = cfg.newFixTagField(change.newTagCode, cfg.ruleTagName, whichEnumCodeName, string(idxNameEnum), END)
 			} else {
 				//当没有配置规则，而且能够满足检查时，就不做任何事情（不要破坏用户自己配置的正确索引名）
 				return
@@ -88,7 +88,7 @@ func (cfg *Config) rewriteSingleColumnIndex(param *Param, schemaIndex schema.Ind
 
 	idxNameImp, ok := cfg.idxNameMap[idxNameEnum]
 	utils.AssertOK(ok)
-	newInm := idxNameImp.GenIndexName(schemaIndex, param.sch.Table, change.name, newColumnName)
+	newInm := idxNameImp.GenIndexName(schemaIndex, param.sch.Table, change.vFieldName, newColumnName)
 	utils.AssertOK(newInm)
 	if newInm.NewIndexName == "" {
 		return
@@ -106,7 +106,7 @@ func (cfg *Config) rewriteSingleColumnIndex(param *Param, schemaIndex schema.Ind
 
 	zaplog.LOG.Debug("tag_field_name", zap.String("tag_field_name", newInm.TagFieldName))
 
-	contentInGormQuotesValue, stx, etx := syntaxgo_tag.ExtractTagValueIndex(change.code, "gorm")
+	contentInGormQuotesValue, stx, etx := syntaxgo_tag.ExtractTagValueIndex(change.newTagCode, "gorm")
 	utils.AssertOK(stx >= 0)
 	utils.AssertOK(etx >= 0)
 	utils.AssertOK(contentInGormQuotesValue) //就是排除 gorm: 以后得到的双引号里面的内容
@@ -121,7 +121,7 @@ func (cfg *Config) rewriteSingleColumnIndex(param *Param, schemaIndex schema.Ind
 			if sfx > 0 && efx > 0 {
 				spx := stx + sfx //把起点坐标补上前面的
 				epx := stx + efx
-				change.code = change.code[:spx] + newInm.NewIndexName + change.code[epx:]
+				change.newTagCode = change.newTagCode[:spx] + newInm.NewIndexName + change.newTagCode[epx:]
 				changed = true
 			}
 		}
@@ -131,19 +131,19 @@ func (cfg *Config) rewriteSingleColumnIndex(param *Param, schemaIndex schema.Ind
 		if sfx > 0 && efx > 0 {
 			spx := stx + sfx //把起点坐标补上前面的
 			epx := stx + efx
-			change.code = change.code[:spx] + newInm.TagFieldName + ":" + newInm.NewIndexName + change.code[epx:]
+			change.newTagCode = change.newTagCode[:spx] + newInm.TagFieldName + ":" + newInm.NewIndexName + change.newTagCode[epx:]
 			changed = true
 		}
 	}
 	if !changed {
-		zaplog.LOG.Debug("not_change_tag", zap.String("not_change_tag", change.code))
+		zaplog.LOG.Debug("not_change_tag", zap.String("not_change_tag", change.newTagCode))
 	}
 
-	zaplog.LOG.Debug("new_tag_string", zap.String("new_tag_string", change.code))
+	zaplog.LOG.Debug("new_tag_string", zap.String("new_tag_string", change.newTagCode))
 }
 
 func (cfg *Config) extractIdxNameEnum(change *changeType, ruleFieldName string) (gormidxname.IdxNAME, bool) {
-	var name = cfg.extractSomeField(change.code, cfg.ruleTagName, ruleFieldName)
+	var name = cfg.extractSomeField(change.newTagCode, cfg.ruleTagName, ruleFieldName)
 	if name == "" {
 		return gormidxname.DEFAULT, false
 	}

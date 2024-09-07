@@ -98,7 +98,7 @@ func (cfg *Config) GenSource(param *Param) []byte {
 	}
 	done.Done(ast.Print(token.NewFileSet(), structType))
 
-	var replacers []*changeType
+	var srcChanges []*changeType
 
 	// 遍历结构体的字段
 	for _, field := range structType.Fields.List {
@@ -128,10 +128,10 @@ func (cfg *Config) GenSource(param *Param) []byte {
 						panic(reason) //这种情况下当有错时，就不处理这种情况，就需要程序员先把两个字段定义到两行里
 					}
 					changeTag := cfg.newFixTagCode(schemaField, "``", momRULE) //这里应该走创建标签的逻辑，但和修改标签的逻辑是相同的
-					replacers = append(replacers, &changeType{
-						name: nameIdent.Name,
-						node: syntaxgo_ast.NewNode(field.End(), field.End()), //在尾部插入新的标签，要紧贴字段而且在换行符前面
-						code: changeTag,
+					srcChanges = append(srcChanges, &changeType{
+						vFieldName: nameIdent.Name,
+						oldTagNode: syntaxgo_ast.NewNode(field.End(), field.End()), //在尾部插入新的标签，要紧贴字段而且在换行符前面
+						newTagCode: changeTag,
 					})
 				}
 			} else {
@@ -139,10 +139,10 @@ func (cfg *Config) GenSource(param *Param) []byte {
 					momRULE := gormmomrule.MomRULE(ruleName)
 					zaplog.LOG.Debug("process", zap.String("rule", string(momRULE)))
 					changeTag := cfg.newFixTagCode(schemaField, field.Tag.Value, momRULE)
-					replacers = append(replacers, &changeType{
-						name: nameIdent.Name,
-						node: field.Tag, //完整替换原来的标签
-						code: changeTag,
+					srcChanges = append(srcChanges, &changeType{
+						vFieldName: nameIdent.Name,
+						oldTagNode: field.Tag, //完整替换原来的标签
+						newTagCode: changeTag,
 					})
 				} else {
 					if cfg.skipAbc123 && cfg.nameGenMap[gormmomrule.DEFAULT].CheckName(schemaField.DBName) {
@@ -152,10 +152,10 @@ func (cfg *Config) GenSource(param *Param) []byte {
 					momRULE := cfg.defaultRule
 					if !cfg.nameGenMap[momRULE].CheckName(schemaField.DBName) { //按照比较宽泛的规则也校验不过的时候就需要修正字段名
 						changeTag := cfg.newFixTagCode(schemaField, field.Tag.Value, momRULE)
-						replacers = append(replacers, &changeType{
-							name: nameIdent.Name,
-							node: field.Tag, //完整替换原来的标签
-							code: changeTag,
+						srcChanges = append(srcChanges, &changeType{
+							vFieldName: nameIdent.Name,
+							oldTagNode: field.Tag, //完整替换原来的标签
+							newTagCode: changeTag,
 						})
 					} else {
 						zaplog.LOG.Debug("meet rule skip", zap.String("name", nameIdent.Name), zap.String("tag", field.Tag.Value))
@@ -166,35 +166,35 @@ func (cfg *Config) GenSource(param *Param) []byte {
 	}
 
 	zaplog.LOG.Debug("change_column_names")
-	for _, rep := range replacers {
-		zaplog.LOG.Debug("check_column:", zap.String("name", rep.name), zap.String("code", rep.code))
+	for _, rep := range srcChanges {
+		zaplog.LOG.Debug("check_column:", zap.String("name", rep.vFieldName), zap.String("code", rep.newTagCode))
 	}
 
 	if cfg.genIdxName {
 		//这里增加个新逻辑，就是单列索引的索引名称不正确，需要也校正索引名，因此这个函数会补充标签内容
-		cfg.rewriteIndexNames(param, replacers)
+		cfg.rewriteIndexNames(param, srcChanges)
 
 		zaplog.LOG.Debug("change_index_names")
-		for _, rep := range replacers {
-			zaplog.LOG.Debug("check_index:", zap.String("name", rep.name), zap.String("code", rep.code))
+		for _, rep := range srcChanges {
+			zaplog.LOG.Debug("check_index:", zap.String("name", rep.vFieldName), zap.String("code", rep.newTagCode))
 		}
 	}
 
 	//需要翻转下从后往前替换，因为替换以后源码会变，假如从前往后替换坐标就对不上啦，而从后往前替换则不存在这个问题
-	slices.Reverse(replacers)
+	slices.Reverse(srcChanges)
 
 	//接下来替换代码，把需要 新增 或者 替换 的标签都设置到代码里
 	newCode := srcData
-	for _, step := range replacers {
-		newCode = syntaxgo_ast.ChangeNodeBytes(newCode, step.node, []byte(step.code))
+	for _, step := range srcChanges {
+		newCode = syntaxgo_ast.ChangeNodeBytes(newCode, step.oldTagNode, []byte(step.newTagCode))
 	}
 	return newCode
 }
 
 type changeType struct {
-	name string   //结构体的字段名
-	node ast.Node //标签的起止位置-就是在src源码中的位置，便于后面的替换代码
-	code string   //新标签的新内容-就是标签的完整全部内容
+	vFieldName string   //结构体的字段名
+	oldTagNode ast.Node //标签的起止位置-就是在src源码中的位置，便于后面的替换代码
+	newTagCode string   //新标签的新内容-就是标签的完整全部内容
 }
 
 func (cfg *Config) extractRuleField(tagCode string) string {

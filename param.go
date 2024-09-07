@@ -68,7 +68,7 @@ func (param *Param) CheckParam() {
 
 func NewParams(root string, models []interface{}) []*Param {
 	var params = make([]*Param, 0, len(models))
-	var paths = utils.LsGoSrcFilePaths(root)
+	var paths = utils.LsGoFiles(root)
 	var idxSet = make(map[int]bool, len(models)) //记住已经处理的数据
 	for _, path := range paths {
 		astFile, err := syntaxgo_ast.NewAstXFilepath(path)
