@@ -112,7 +112,7 @@ func (cfg *Config) rewriteSingleColumnIndex(param *Param, schemaIndex schema.Ind
 	utils.AssertOK(contentInGormQuotesValue) //就是排除 gorm: 以后得到的双引号里面的内容
 	zaplog.LOG.Debug("gorm_tag_content", zap.String("gorm_tag_content", contentInGormQuotesValue))
 
-	var changed = utils.FALSE()
+	var changed = utils.NewBoolean(false)
 	if !changed {
 		//假如连 UTF-8 编码 都不满足，就说明这个索引名是完全错误的
 		if utf8.ValidString(schemaIndex.Name) {

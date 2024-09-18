@@ -52,6 +52,6 @@ func AssertEquals[T comparable](a, b T) {
 	}
 }
 
-func FALSE() bool {
-	return false
+func NewBoolean(v bool) bool {
+	return v
 }
