@@ -4,10 +4,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/pkg/errors"
 	"github.com/yyle88/done"
 	"github.com/yyle88/gormcngen"
-	"github.com/yyle88/zaplog"
 	"gorm.io/gorm/schema"
 )
 
@@ -39,19 +37,4 @@ func LsGoFiles(root string) []string {
 	return paths
 }
 
-func AssertOK[T comparable](v T) {
-	var zero T
-	if v == zero {
-		zaplog.LOG.Panic("assert not ok arg is zero then panic")
-	}
-}
-
-func AssertEquals[T comparable](a, b T) {
-	if a != b {
-		panic(errors.New("not equals"))
-	}
-}
-
-func NewBoolean(v bool) bool {
-	return v
-}
+func NewBoolean(b bool) bool { return b }

@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/yyle88/gormmom/internal/utils"
+	"github.com/yyle88/must"
 	"github.com/yyle88/zaplog"
 	"go.uber.org/zap"
 	"gorm.io/gorm/schema"
@@ -53,7 +53,7 @@ func (G *nameGenUseCnmImp) GenIndexName(schemaIndex schema.Index, tableName stri
 			EnumCodeName: "",
 		}
 	}
-	utils.AssertOK(newIndexName)
+	must.Nice(newIndexName)
 
 	return &IdxGenResType{
 		TagFieldName: tagFieldName,

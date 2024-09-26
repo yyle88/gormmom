@@ -5,6 +5,7 @@ import (
 
 	"github.com/yyle88/gormmom/gormidxname"
 	"github.com/yyle88/gormmom/internal/utils"
+	"github.com/yyle88/must"
 	"github.com/yyle88/syntaxgo/syntaxgo_tag"
 	"github.com/yyle88/zaplog"
 	"go.uber.org/zap"
@@ -47,7 +48,7 @@ func (cfg *Config) rewriteSingleColumnIndex(param *Param, schemaIndex schema.Ind
 	zaplog.LOG.Debug("rewrite_single_column_index", zap.String("table_name", param.sch.Table), zap.String("field_name", change.vFieldName), zap.String("index_name", schemaIndex.Name), zap.String("index_class", schemaIndex.Class))
 
 	newColumnName := cfg.extractSomeField(change.newTagCode, "gorm", "column")
-	utils.AssertOK(newColumnName)
+	must.Nice(newColumnName)
 	zaplog.LOG.Debug("new_column_name", zap.String("name", change.vFieldName), zap.String("new_column_name", newColumnName))
 
 	//这个是规则的枚举名称
@@ -69,7 +70,7 @@ func (cfg *Config) rewriteSingleColumnIndex(param *Param, schemaIndex schema.Ind
 			//就是不存在时 使用默认值 的情况
 			idxNameEnum = gormidxname.DEFAULT
 			idxNameImp, ok := cfg.idxNameMap[idxNameEnum]
-			utils.AssertOK(ok)
+			must.TRUE(ok)
 
 			match := idxNameImp.CheckIdxName(schemaIndex.Name)
 			zaplog.LOG.Debug("check_idx_match", zap.Bool("match", match))
@@ -87,9 +88,9 @@ func (cfg *Config) rewriteSingleColumnIndex(param *Param, schemaIndex schema.Ind
 	}
 
 	idxNameImp, ok := cfg.idxNameMap[idxNameEnum]
-	utils.AssertOK(ok)
+	must.TRUE(ok)
 	newInm := idxNameImp.GenIndexName(schemaIndex, param.sch.Table, change.vFieldName, newColumnName)
-	utils.AssertOK(newInm)
+	must.Nice(newInm)
 	if newInm.NewIndexName == "" {
 		return
 	}
@@ -97,7 +98,7 @@ func (cfg *Config) rewriteSingleColumnIndex(param *Param, schemaIndex schema.Ind
 		return
 	}
 	zaplog.LOG.Debug("compare", zap.String("which_enum_code_name", whichEnumCodeName), zap.String("enum_code_name", newInm.EnumCodeName))
-	utils.AssertEquals(whichEnumCodeName, newInm.EnumCodeName)
+	must.Equals(whichEnumCodeName, newInm.EnumCodeName)
 
 	zaplog.LOG.Debug("new_index_name", zap.String("new_index_name", newInm.NewIndexName))
 	if newInm.NewIndexName == schemaIndex.Name {
@@ -107,9 +108,9 @@ func (cfg *Config) rewriteSingleColumnIndex(param *Param, schemaIndex schema.Ind
 	zaplog.LOG.Debug("tag_field_name", zap.String("tag_field_name", newInm.TagFieldName))
 
 	contentInGormQuotesValue, stx, etx := syntaxgo_tag.ExtractTagValueIndex(change.newTagCode, "gorm")
-	utils.AssertOK(stx >= 0)
-	utils.AssertOK(etx >= 0)
-	utils.AssertOK(contentInGormQuotesValue) //就是排除 gorm: 以后得到的双引号里面的内容
+	must.TRUE(stx >= 0)
+	must.TRUE(etx >= 0)
+	must.Nice(contentInGormQuotesValue) //就是排除 gorm: 以后得到的双引号里面的内容
 	zaplog.LOG.Debug("gorm_tag_content", zap.String("gorm_tag_content", contentInGormQuotesValue))
 
 	var changed = utils.NewBoolean(false)
@@ -147,7 +148,7 @@ func (cfg *Config) extractIdxNameEnum(change *changeType, ruleFieldName string) 
 	if name == "" {
 		return gormidxname.DEFAULT, false
 	}
-	utils.AssertOK(name)
+	must.Nice(name)
 	zaplog.LOG.Debug("index_rule_name", zap.String("index_rule_name", name))
 	return gormidxname.IdxNAME(name), true
 }
