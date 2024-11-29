@@ -71,11 +71,13 @@ func NewParams(root string, models []interface{}) []*Param {
 	var paths = utils.LsGoFiles(root)
 	var idxSet = make(map[int]bool, len(models)) //记住已经处理的数据
 	for _, path := range paths {
-		astFile, err := syntaxgo_ast.NewAstXFilepath(path)
+		astBundle, err := syntaxgo_ast.NewAstBundleV4(path)
 		if err != nil {
 			zaplog.LOG.Warn("something is wrong then warn", zap.String("path", path), zap.Error(err))
 			continue
 		}
+		astFile, _ := astBundle.GetBundle()
+
 		for objIdx, object := range models {
 			if idxSet[objIdx] {
 				//说明这种情况已经处理过

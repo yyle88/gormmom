@@ -3,7 +3,6 @@ package gormmom
 import (
 	"fmt"
 	"go/ast"
-	"go/token"
 	"os"
 	"slices"
 
@@ -14,6 +13,7 @@ import (
 	"github.com/yyle88/gormmom/gormmomrule"
 	"github.com/yyle88/gormmom/internal/utils"
 	"github.com/yyle88/syntaxgo/syntaxgo_ast"
+	"github.com/yyle88/syntaxgo/syntaxgo_astnode"
 	"github.com/yyle88/syntaxgo/syntaxgo_tag"
 	"github.com/yyle88/zaplog"
 	"go.uber.org/zap"
@@ -88,7 +88,9 @@ func (cfg *Config) GenSource(param *Param) []byte {
 	param.CheckParam()
 
 	srcData := done.VAE(os.ReadFile(param.path)).Nice()
-	astFile := done.VCE(syntaxgo_ast.NewAstFromSource(srcData)).Nice()
+	astBundle := done.VCE(syntaxgo_ast.NewAstBundleV1(srcData)).Nice()
+
+	astFile, fileSet := astBundle.GetBundle()
 
 	structType := syntaxgo_ast.SeekStructXName(astFile, param.structName)
 	if structType == nil {
@@ -96,7 +98,7 @@ func (cfg *Config) GenSource(param *Param) []byte {
 		zaplog.LOG.Panic(reason, zap.String("struct_name", param.structName))
 		panic(reason)
 	}
-	done.Done(ast.Print(token.NewFileSet(), structType))
+	done.Done(ast.Print(fileSet, structType))
 
 	var srcChanges []*changeType
 
@@ -130,7 +132,7 @@ func (cfg *Config) GenSource(param *Param) []byte {
 					changeTag := cfg.newFixTagCode(schemaField, "``", momRULE) //这里应该走创建标签的逻辑，但和修改标签的逻辑是相同的
 					srcChanges = append(srcChanges, &changeType{
 						vFieldName: nameIdent.Name,
-						oldTagNode: syntaxgo_ast.NewNode(field.End(), field.End()), //在尾部插入新的标签，要紧贴字段而且在换行符前面
+						oldTagNode: syntaxgo_astnode.NewNode(field.End(), field.End()), //在尾部插入新的标签，要紧贴字段而且在换行符前面
 						newTagCode: changeTag,
 					})
 				}
@@ -186,7 +188,7 @@ func (cfg *Config) GenSource(param *Param) []byte {
 	//接下来替换代码，把需要 新增 或者 替换 的标签都设置到代码里
 	newCode := srcData
 	for _, step := range srcChanges {
-		newCode = syntaxgo_ast.ChangeNodeBytes(newCode, step.oldTagNode, []byte(step.newTagCode))
+		newCode = syntaxgo_astnode.ChangeNodeCode(newCode, step.oldTagNode, []byte(step.newTagCode))
 	}
 	return newCode
 }
