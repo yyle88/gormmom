@@ -14,6 +14,7 @@ import (
 	"github.com/yyle88/gormmom/internal/utils"
 	"github.com/yyle88/syntaxgo/syntaxgo_ast"
 	"github.com/yyle88/syntaxgo/syntaxgo_astnode"
+	"github.com/yyle88/syntaxgo/syntaxgo_search"
 	"github.com/yyle88/syntaxgo/syntaxgo_tag"
 	"github.com/yyle88/zaplog"
 	"go.uber.org/zap"
@@ -92,7 +93,7 @@ func (cfg *Config) GenSource(param *Param) []byte {
 
 	astFile, fileSet := astBundle.GetBundle()
 
-	structType := syntaxgo_ast.SeekStructXName(astFile, param.structName)
+	structType := syntaxgo_search.FindStructTypeByName(astFile, param.structName)
 	if structType == nil {
 		const reason = "CAN NOT FIND STRUCT TYPE"
 		zaplog.LOG.Panic(reason, zap.String("struct_name", param.structName))

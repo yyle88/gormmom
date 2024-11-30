@@ -7,6 +7,7 @@ import (
 	"github.com/yyle88/gormmom/internal/utils"
 	"github.com/yyle88/syntaxgo/syntaxgo_ast"
 	"github.com/yyle88/syntaxgo/syntaxgo_reflect"
+	"github.com/yyle88/syntaxgo/syntaxgo_search"
 	"github.com/yyle88/zaplog"
 	"go.uber.org/zap"
 	"gorm.io/gorm/schema"
@@ -90,7 +91,7 @@ func NewParams(root string, models []interface{}) []*Param {
 				idxSet[objIdx] = true
 				continue
 			}
-			structType := syntaxgo_ast.SeekStructXName(astFile, structName)
+			structType := syntaxgo_search.FindStructTypeByName(astFile, structName)
 			if structType == nil {
 				//这种情况下没有错误，而是说明这个文件里没有定义这个模型
 				//但是在其他文件里可能有因此这里不是错误
