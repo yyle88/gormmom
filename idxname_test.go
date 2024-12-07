@@ -31,7 +31,7 @@ type paramExample3 struct {
 }
 
 func TestDryRunMigrate(t *testing.T) {
-	db := done.VCE(gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{
+	db := done.VCE(gorm.Open(sqlite.Open("file::memory:?cache=private"), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
 	})).Nice()
 	defer func() {

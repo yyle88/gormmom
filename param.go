@@ -91,11 +91,13 @@ func NewParams(root string, models []interface{}) []*Param {
 				idxSet[objIdx] = true
 				continue
 			}
-			structType := syntaxgo_search.FindStructTypeByName(astFile, structName)
-			if structType == nil {
+			structContent, ok := syntaxgo_search.FindStructTypeByName(astFile, structName)
+			if !ok {
 				//这种情况下没有错误，而是说明这个文件里没有定义这个模型
 				//但是在其他文件里可能有因此这里不是错误
 				continue
+			} else {
+				_ = structContent
 			}
 			params = append(params, NewParamV3(path, object))
 			idxSet[objIdx] = true

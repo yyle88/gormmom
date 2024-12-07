@@ -11,7 +11,8 @@ import (
 
 // NewSchemaFieldsMap 把字段列表由 slice 转换为 map，以结构体中go的字段名为主键
 func NewSchemaFieldsMap(sch *schema.Schema) map[string]*schema.Field {
-	gormcngen.ShowSchemaMessage(sch)
+	gormcngen.ShowSchemaEnglish(sch)
+	gormcngen.ShowSchemaChinese(sch)
 
 	var mp = make(map[string]*schema.Field, len(sch.Fields))
 	for _, field := range sch.Fields {

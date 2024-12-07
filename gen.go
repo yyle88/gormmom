@@ -93,18 +93,18 @@ func (cfg *Config) GenSource(param *Param) []byte {
 
 	astFile, fileSet := astBundle.GetBundle()
 
-	structType := syntaxgo_search.FindStructTypeByName(astFile, param.structName)
-	if structType == nil {
+	structContent, ok := syntaxgo_search.FindStructTypeByName(astFile, param.structName)
+	if !ok {
 		const reason = "CAN NOT FIND STRUCT TYPE"
 		zaplog.LOG.Panic(reason, zap.String("struct_name", param.structName))
 		panic(reason)
 	}
-	done.Done(ast.Print(fileSet, structType))
+	done.Done(ast.Print(fileSet, structContent))
 
 	var srcChanges []*changeType
 
 	// 遍历结构体的字段
-	for _, field := range structType.Fields.List {
+	for _, field := range structContent.Fields.List {
 		// 打印字段名称和类型
 		for _, nameIdent := range field.Names {
 			zaplog.LOG.Debug("--")
