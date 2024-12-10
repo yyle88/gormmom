@@ -26,8 +26,8 @@ func (cfg *Config) correctIndexNames(srcChanges []*TagModification) {
 		mapTagModifications[rep.structFieldName] = rep
 	}
 
-	schemaIndexes := cfg.param.sch.ParseIndexes()
-	zaplog.LOG.Debug("check_indexes", zap.String("object_class", cfg.param.sch.Name), zap.String("table_name", cfg.param.sch.Table), zap.Int("index_count", len(schemaIndexes)))
+	schemaIndexes := cfg.structSchemaInfo.sch.ParseIndexes()
+	zaplog.LOG.Debug("check_indexes", zap.String("object_class", cfg.structSchemaInfo.sch.Name), zap.String("table_name", cfg.structSchemaInfo.sch.Table), zap.Int("index_count", len(schemaIndexes)))
 	for _, node := range schemaIndexes {
 		zaplog.LOG.Debug("foreach_index")
 		zaplog.LOG.Debug("check_a_index", zap.String("index_name", node.Name), zap.Int("field_size", len(node.Fields)))
@@ -45,7 +45,7 @@ func (cfg *Config) correctIndexNames(srcChanges []*TagModification) {
 }
 
 func (cfg *Config) rewriteSingleColumnIndex(schemaIndex schema.Index, change *TagModification) {
-	zaplog.LOG.Debug("rewrite_single_column_index", zap.String("table_name", cfg.param.sch.Table), zap.String("field_name", change.structFieldName), zap.String("index_name", schemaIndex.Name), zap.String("index_class", schemaIndex.Class))
+	zaplog.LOG.Debug("rewrite_single_column_index", zap.String("table_name", cfg.structSchemaInfo.sch.Table), zap.String("field_name", change.structFieldName), zap.String("index_name", schemaIndex.Name), zap.String("index_class", schemaIndex.Class))
 
 	columnName := cfg.extractTagFieldGetValue(change.modifiedTagCode, "gorm", "column")
 	must.Nice(columnName)
@@ -65,7 +65,7 @@ func (cfg *Config) rewriteSingleColumnIndex(schemaIndex schema.Index, change *Ta
 	var indexNamePattern gormidxname.IndexNamePattern
 	if indexPrefixCate != "" {
 		exist := false
-		indexNamePattern, exist = cfg.resolveIndexPattern(change, indexPrefixCate, cfg.options)
+		indexNamePattern, exist = cfg.resolveIndexPattern(change, indexPrefixCate)
 		if !exist {
 			//就是不存在时 使用默认值 的情况
 			indexNamePattern = gormidxname.DefaultPattern
@@ -89,7 +89,7 @@ func (cfg *Config) rewriteSingleColumnIndex(schemaIndex schema.Index, change *Ta
 
 	namingImp, ok := cfg.options.indexNamingStrategies[indexNamePattern]
 	must.TRUE(ok)
-	idxRes := must.Nice(namingImp.GenerateIndexName(schemaIndex, cfg.param.sch.Table, change.structFieldName, columnName))
+	idxRes := must.Nice(namingImp.GenerateIndexName(schemaIndex, cfg.structSchemaInfo.sch.Table, change.structFieldName, columnName))
 	if idxRes.NewIndexName == "" {
 		return
 	}
@@ -142,8 +142,8 @@ func (cfg *Config) rewriteSingleColumnIndex(schemaIndex schema.Index, change *Ta
 	zaplog.LOG.Debug("new_tag_string", zap.String("new_tag_string", change.modifiedTagCode))
 }
 
-func (cfg *Config) resolveIndexPattern(change *TagModification, ruleFieldName string, options *Options) (gormidxname.IndexNamePattern, bool) {
-	var name = cfg.extractTagFieldGetValue(change.modifiedTagCode, options.namingTagName, ruleFieldName)
+func (cfg *Config) resolveIndexPattern(change *TagModification, patternFieldName string) (gormidxname.IndexNamePattern, bool) {
+	var name = cfg.extractTagFieldGetValue(change.modifiedTagCode, cfg.options.namingTagName, patternFieldName)
 	if name == "" {
 		return gormidxname.DefaultPattern, false
 	}

@@ -28,23 +28,17 @@ type Example struct {
 }
 
 func TestGenCode(t *testing.T) {
-	srcPath := runpath.CurrentPath()
-	param := NewStructSchemaInfoV2[Example](srcPath)
-
-	cfg := NewConfig(param, NewOptions())
+	cfg := NewConfig(NewStructSchemaInfoV2[Example](runpath.CurrentPath()), NewOptions())
 	t.Log(cfg)
 
-	newCode := cfg.GenerateCode()
+	newCode := cfg.CreateCode()
 	t.Log(string(newCode))
 }
 
-func TestGenCode_S63U(t *testing.T) {
-	srcPath := runpath.CurrentPath()
-	param := NewStructSchemaInfoV2[Example](srcPath)
-
-	cfg := NewConfig(param, NewOptions().SetDefaultColumnNamePattern(gormmomname.DefaultPattern))
+func TestGenCode_S63(t *testing.T) {
+	cfg := NewConfig(NewStructSchemaInfoV2[Example](runpath.CurrentPath()), NewOptions().SetDefaultColumnNamePattern(gormmomname.DefaultPattern))
 	t.Log(cfg)
 
-	newCode := cfg.GenerateCode()
+	newCode := cfg.CreateCode()
 	t.Log(string(newCode))
 }

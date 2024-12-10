@@ -23,9 +23,9 @@ type CodeGenerationConfig struct {
 	configs []*Config
 }
 
-func NewCodeGenerationConfig(params []*StructSchemaInfo, options *Options) *CodeGenerationConfig {
+func NewCodeGenerationConfig(structSchemaInfos []*StructSchemaInfo, options *Options) *CodeGenerationConfig {
 	var configs []*Config
-	for _, param := range params {
+	for _, param := range structSchemaInfos {
 		configs = append(configs, NewConfig(param, options))
 	}
 	return &CodeGenerationConfig{configs: configs}
@@ -38,34 +38,34 @@ func (c *CodeGenerationConfig) GenReplaces() {
 }
 
 type Config struct {
-	param   *StructSchemaInfo
-	options *Options
+	structSchemaInfo *StructSchemaInfo
+	options          *Options
 }
 
-func NewConfig(param *StructSchemaInfo, options *Options) *Config {
+func NewConfig(structSchemaInfo *StructSchemaInfo, options *Options) *Config {
 	return &Config{
-		param:   param,
-		options: options,
+		structSchemaInfo: structSchemaInfo,
+		options:          options,
 	}
 }
 
 func (cfg *Config) GenReplace() {
-	utils.MustWriteFile(cfg.param.sourcePath, done.VAE(formatgo.FormatBytes(cfg.GenerateCode())).Nice())
+	utils.MustWriteFile(cfg.structSchemaInfo.sourcePath, done.VAE(formatgo.FormatBytes(cfg.CreateCode())).Nice())
 }
 
-func (cfg *Config) GenerateCode() []byte {
-	cfg.param.Validate()
+func (cfg *Config) CreateCode() []byte {
+	cfg.structSchemaInfo.Validate()
 
-	sourceCode := done.VAE(os.ReadFile(cfg.param.sourcePath)).Nice()
+	sourceCode := done.VAE(os.ReadFile(cfg.structSchemaInfo.sourcePath)).Nice()
 
 	astBundle := done.VCE(syntaxgo_ast.NewAstBundleV1(sourceCode)).Nice()
 
 	astFile, fileSet := astBundle.GetBundle()
 
-	structContent, ok := syntaxgo_search.FindStructTypeByName(astFile, cfg.param.structName)
+	structContent, ok := syntaxgo_search.FindStructTypeByName(astFile, cfg.structSchemaInfo.structName)
 	if !ok {
 		const reason = "CAN NOT FIND STRUCT TYPE"
-		zaplog.LOG.Panic(reason, zap.String("struct_name", cfg.param.structName))
+		zaplog.LOG.Panic(reason, zap.String("struct_name", cfg.structSchemaInfo.structName))
 		panic(reason)
 	}
 	done.Done(ast.Print(fileSet, structContent))
@@ -110,7 +110,7 @@ func (cfg *Config) collectTagModifications(structContent *ast.StructType) []*Tag
 			zaplog.LOG.Debug("process", zap.String("struct_name:", nameIdent.Name))
 			zaplog.LOG.Debug("--")
 
-			schemaField, exist := cfg.param.schColumns[nameIdent.Name]
+			schemaField, exist := cfg.structSchemaInfo.schColumns[nameIdent.Name]
 			if !exist { //比如字段是 "V哈哈" 就没事 而假如是 "v哈哈" 或者 "哈哈" 就不行，因为非以大写字母开始的字段，就没有gorm的列名
 				zaplog.LOG.Debug("NO SCHEMA_FIELD - MAYBE NAME IS UNEXPORTED", zap.String("struct_name", nameIdent.Name))
 				continue
@@ -122,14 +122,14 @@ func (cfg *Config) collectTagModifications(structContent *ast.StructType) []*Tag
 					zaplog.LOG.Debug("SKIP SIMPLE FIELD", zap.String("struct_name", nameIdent.Name))
 					continue
 				}
-				momRULE := cfg.options.defaultColumnNamePattern
-				if !cfg.options.columnNamingStrategies[momRULE].IsValidColumnName(schemaField.DBName) {
+				columnNamePattern := cfg.options.defaultColumnNamePattern
+				if !cfg.options.columnNamingStrategies[columnNamePattern].IsValidColumnName(schemaField.DBName) {
 					if len(field.Names) >= 2 { //比如 a,b int 这种两个字段在一起，但其中一个字段的列名不正确时，就没法自动解决啦（其实有办法但不想实现，因为代价较大而没有收益）
 						const reason = "CAN NOT HANDLE THIS SITUATION"
 						zaplog.LOG.Panic(reason, zap.String("struct_name", nameIdent.Name))
 						panic(reason) //这种情况下当有错时，就不处理这种情况，就需要程序员先把两个字段定义到两行里
 					}
-					changeTag := cfg.modifyFieldTagCorrection(schemaField, "``", momRULE, cfg.options) //这里应该走创建标签的逻辑，但和修改标签的逻辑是相同的
+					changeTag := cfg.modifyFieldTagCorrection(schemaField, "``", columnNamePattern) //这里应该走创建标签的逻辑，但和修改标签的逻辑是相同的
 					tagModifications = append(tagModifications, &TagModification{
 						structFieldName: nameIdent.Name,
 						previousTagNode: syntaxgo_astnode.NewNode(field.End(), field.End()), //在尾部插入新的标签，要紧贴字段而且在换行符前面
@@ -137,10 +137,10 @@ func (cfg *Config) collectTagModifications(structContent *ast.StructType) []*Tag
 					})
 				}
 			} else {
-				if ruleName := cfg.extractTagGetCnmPattern(field.Tag.Value, cfg.options); ruleName != "" {
-					momRULE := gormmomname.ColumnNamePattern(ruleName)
-					zaplog.LOG.Debug("process", zap.String("rule", string(momRULE)))
-					changeTag := cfg.modifyFieldTagCorrection(schemaField, field.Tag.Value, momRULE, cfg.options)
+				if cnmPattern := cfg.extractTagGetCnmPattern(field.Tag.Value); cnmPattern != "" {
+					columnNamePattern := gormmomname.ColumnNamePattern(cnmPattern)
+					zaplog.LOG.Debug("process", zap.String("column_name_pattern", string(columnNamePattern)))
+					changeTag := cfg.modifyFieldTagCorrection(schemaField, field.Tag.Value, columnNamePattern)
 					tagModifications = append(tagModifications, &TagModification{
 						structFieldName: nameIdent.Name,
 						previousTagNode: field.Tag, //完整替换原来的标签
@@ -151,16 +151,16 @@ func (cfg *Config) collectTagModifications(structContent *ast.StructType) []*Tag
 						zaplog.LOG.Debug("SKIP SIMPLE FIELD", zap.String("struct_name", nameIdent.Name))
 						continue
 					}
-					momRULE := cfg.options.defaultColumnNamePattern
-					if !cfg.options.columnNamingStrategies[momRULE].IsValidColumnName(schemaField.DBName) { //按照比较宽泛的规则也校验不过的时候就需要修正字段名
-						changeTag := cfg.modifyFieldTagCorrection(schemaField, field.Tag.Value, momRULE, cfg.options)
+					columnNamePattern := cfg.options.defaultColumnNamePattern
+					if !cfg.options.columnNamingStrategies[columnNamePattern].IsValidColumnName(schemaField.DBName) { //按照比较宽泛的规则也校验不过的时候就需要修正字段名
+						changeTag := cfg.modifyFieldTagCorrection(schemaField, field.Tag.Value, columnNamePattern)
 						tagModifications = append(tagModifications, &TagModification{
 							structFieldName: nameIdent.Name,
 							previousTagNode: field.Tag, //完整替换原来的标签
 							modifiedTagCode: changeTag,
 						})
 					} else {
-						zaplog.LOG.Debug("meet rule skip", zap.String("name", nameIdent.Name), zap.String("tag", field.Tag.Value))
+						zaplog.LOG.Debug("match-pattern-so-skip", zap.String("name", nameIdent.Name), zap.String("tag", field.Tag.Value))
 					}
 				}
 			}
@@ -174,8 +174,8 @@ func (cfg *Config) collectTagModifications(structContent *ast.StructType) []*Tag
 	return tagModifications
 }
 
-func (cfg *Config) extractTagGetCnmPattern(tagCode string, options *Options) string {
-	return cfg.extractTagFieldGetValue(tagCode, options.namingTagName, "rule")
+func (cfg *Config) extractTagGetCnmPattern(tagCode string) string {
+	return cfg.extractTagFieldGetValue(tagCode, cfg.options.namingTagName, cfg.options.columnNamePatternFieldName)
 }
 
 func (cfg *Config) extractTagFieldGetValue(tagCode string, key1 string, key2 string) string {
@@ -190,19 +190,19 @@ func (cfg *Config) extractTagFieldGetValue(tagCode string, key1 string, key2 str
 	return tagField
 }
 
-func (cfg *Config) modifyFieldTagCorrection(schemaField *schema.Field, tag string, momRULE gormmomname.ColumnNamePattern, options *Options) string {
+func (cfg *Config) modifyFieldTagCorrection(schemaField *schema.Field, tag string, columnNamePattern gormmomname.ColumnNamePattern) string {
 	zaplog.LOG.Debug("new_fix_tag_code", zap.String("name", schemaField.Name), zap.String("tag", tag))
 	//在 gorm 里修改 column 内容
-	newTag := cfg.modifyGormTagWithColumn(schemaField, tag, momRULE, options)
-	//在 规则 里修改 rule 内容
-	newTag = cfg.modifyPatternTagWithName(newTag, momRULE, options)
+	newTag := cfg.modifyGormTagWithColumn(schemaField, tag, columnNamePattern)
+	//在 规则 里修改 column-name-pattern 内容
+	newTag = cfg.modifyPatternTagWithName(newTag, columnNamePattern)
 	//这是替换后的结果，即替换整个标签内容，获得新的完整标签内容
 	zaplog.LOG.Debug("new_fix_tag_code", zap.String("name", schemaField.Name), zap.String("new_tag", newTag))
 	return newTag
 }
 
-func (cfg *Config) modifyGormTagWithColumn(schemaField *schema.Field, tag string, momRULE gormmomname.ColumnNamePattern, options *Options) string {
-	var columnName = options.columnNamingStrategies[momRULE].GenerateColumnName(schemaField.Name)
+func (cfg *Config) modifyGormTagWithColumn(schemaField *schema.Field, tag string, columnNamePattern gormmomname.ColumnNamePattern) string {
+	var columnName = cfg.options.columnNamingStrategies[columnNamePattern].GenerateColumnName(schemaField.Name)
 	zaplog.LOG.Debug("new_fix_gorm_tag", zap.String("name", schemaField.Name), zap.String("column_name", columnName))
 
 	tagValue, sdx, edx := syntaxgo_tag.ExtractTagValueIndex(tag, "gorm")
@@ -221,15 +221,15 @@ func (cfg *Config) modifyGormTagWithColumn(schemaField *schema.Field, tag string
 	return syntaxgo_tag.SetTagFieldValue(tag, "gorm", "column", columnName, syntaxgo_tag.INSERT_LOCATION_TOP)
 }
 
-func (cfg *Config) modifyPatternTagWithName(tag string, momRULE gormmomname.ColumnNamePattern, options *Options) string {
-	zaplog.LOG.Debug("new_fix_rule_tag", zap.String("rule_name", string(momRULE)))
+func (cfg *Config) modifyPatternTagWithName(tag string, columnNamePattern gormmomname.ColumnNamePattern) string {
+	zaplog.LOG.Debug("new_fix_rule_tag", zap.String("rule_name", string(columnNamePattern)))
 
-	tagValue, sdx, edx := syntaxgo_tag.ExtractTagValueIndex(tag, options.namingTagName)
+	tagValue, sdx, edx := syntaxgo_tag.ExtractTagValueIndex(tag, cfg.options.namingTagName)
 	if sdx < 0 || edx < 0 { //表示没找到 gorm 相关的内容
 		if tagValue != "" {
 			zaplog.LOG.Panic("IMPOSSIBLE")
 		}
-		part := fmt.Sprintf(`%s:"rule:%s;"`, options.namingTagName, string(momRULE))
+		part := fmt.Sprintf(`%s:"%s:%s;"`, cfg.options.namingTagName, cfg.options.columnNamePatternFieldName, string(columnNamePattern))
 		if rch := tag[len(tag)-2]; rch != ' ' && rch != '`' {
 			part = " " + part //说明前面还有别的标签
 		}
@@ -237,5 +237,5 @@ func (cfg *Config) modifyPatternTagWithName(tag string, momRULE gormmomname.Colu
 		return tag[:p] + part + tag[p:]
 	}
 	//设置这个标签的这个字段的值
-	return syntaxgo_tag.SetTagFieldValue(tag, options.namingTagName, "rule", string(momRULE), syntaxgo_tag.INSERT_LOCATION_TOP)
+	return syntaxgo_tag.SetTagFieldValue(tag, cfg.options.namingTagName, cfg.options.columnNamePatternFieldName, string(columnNamePattern), syntaxgo_tag.INSERT_LOCATION_TOP)
 }

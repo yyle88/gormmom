@@ -9,8 +9,7 @@ import (
 )
 
 func TestGen(t *testing.T) {
-	srcPath := runtestpath.SrcPath(t)
-	param := gormmom.NewStructSchemaInfoV2[Example](srcPath)
+	param := gormmom.NewStructSchemaInfoV2[Example](runtestpath.SrcPath(t))
 	param.Validate()
 
 	cfg := gormmom.NewConfig(param, gormmom.NewOptions().SetDefaultColumnNamePattern(gormmomname.DefaultPattern))
