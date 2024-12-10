@@ -72,7 +72,7 @@ func (cfg *Config) CreateCode() []byte {
 
 	sourceModifications := cfg.collectTagModifications(structContent)
 
-	if cfg.options.careIndexName {
+	if cfg.options.renewIndexName {
 		//这里增加个新逻辑，就是单列索引的索引名称不正确，需要也校正索引名，因此这个函数会补充标签内容
 		cfg.correctIndexNames(sourceModifications)
 
@@ -93,44 +93,44 @@ func (cfg *Config) CreateCode() []byte {
 	return newCode
 }
 
-type TagModification struct {
+type defineTagModification struct {
 	structFieldName string   //结构体的字段名
 	previousTagNode ast.Node //标签的起止位置-就是在src源码中的位置，便于后面的替换代码
 	modifiedTagCode string   //新标签的新内容-就是标签的完整全部内容
 }
 
-func (cfg *Config) collectTagModifications(structContent *ast.StructType) []*TagModification {
-	var tagModifications []*TagModification
+func (cfg *Config) collectTagModifications(structContent *ast.StructType) []*defineTagModification {
+	var defineTagModifications []*defineTagModification
 
 	// 遍历结构体的字段
 	for _, field := range structContent.Fields.List {
 		// 打印字段名称和类型
 		for _, nameIdent := range field.Names {
 			zaplog.LOG.Debug("--")
-			zaplog.LOG.Debug("process", zap.String("struct_name:", nameIdent.Name))
+			zaplog.LOG.Debug("process", zap.String("struct_field_name:", nameIdent.Name))
 			zaplog.LOG.Debug("--")
 
 			schemaField, exist := cfg.structSchemaInfo.schColumns[nameIdent.Name]
 			if !exist { //比如字段是 "V哈哈" 就没事 而假如是 "v哈哈" 或者 "哈哈" 就不行，因为非以大写字母开始的字段，就没有gorm的列名
-				zaplog.LOG.Debug("NO SCHEMA_FIELD - MAYBE NAME IS UNEXPORTED", zap.String("struct_name", nameIdent.Name))
+				zaplog.LOG.Debug("NO SCHEMA_FIELD - MAYBE NAME IS UNEXPORTED", zap.String("struct_name", cfg.structSchemaInfo.structName), zap.String("struct_field_name", nameIdent.Name))
 				continue
 			}
 
 			if field.Tag == nil {
-				zaplog.LOG.Debug("NO TAG", zap.String("struct_name", nameIdent.Name))
+				zaplog.LOG.Debug("NO TAG", zap.String("struct_name", cfg.structSchemaInfo.structName), zap.String("struct_field_name", nameIdent.Name))
 				if cfg.options.skipBasicNaming && cfg.options.columnNamingStrategies[gormmomname.DefaultPattern].IsValidColumnName(schemaField.DBName) {
-					zaplog.LOG.Debug("SKIP SIMPLE FIELD", zap.String("struct_name", nameIdent.Name))
+					zaplog.LOG.Debug("SKIP SIMPLE FIELD", zap.String("struct_name", cfg.structSchemaInfo.structName), zap.String("struct_field_name", nameIdent.Name))
 					continue
 				}
 				columnNamePattern := cfg.options.defaultColumnNamePattern
 				if !cfg.options.columnNamingStrategies[columnNamePattern].IsValidColumnName(schemaField.DBName) {
 					if len(field.Names) >= 2 { //比如 a,b int 这种两个字段在一起，但其中一个字段的列名不正确时，就没法自动解决啦（其实有办法但不想实现，因为代价较大而没有收益）
 						const reason = "CAN NOT HANDLE THIS SITUATION"
-						zaplog.LOG.Panic(reason, zap.String("struct_name", nameIdent.Name))
+						zaplog.LOG.Panic(reason, zap.String("struct_name", cfg.structSchemaInfo.structName), zap.String("struct_field_name", nameIdent.Name))
 						panic(reason) //这种情况下当有错时，就不处理这种情况，就需要程序员先把两个字段定义到两行里
 					}
 					changeTag := cfg.modifyFieldTagCorrection(schemaField, "``", columnNamePattern) //这里应该走创建标签的逻辑，但和修改标签的逻辑是相同的
-					tagModifications = append(tagModifications, &TagModification{
+					defineTagModifications = append(defineTagModifications, &defineTagModification{
 						structFieldName: nameIdent.Name,
 						previousTagNode: syntaxgo_astnode.NewNode(field.End(), field.End()), //在尾部插入新的标签，要紧贴字段而且在换行符前面
 						modifiedTagCode: changeTag,
@@ -141,20 +141,20 @@ func (cfg *Config) collectTagModifications(structContent *ast.StructType) []*Tag
 					columnNamePattern := gormmomname.ColumnNamePattern(cnmPattern)
 					zaplog.LOG.Debug("process", zap.String("column_name_pattern", string(columnNamePattern)))
 					changeTag := cfg.modifyFieldTagCorrection(schemaField, field.Tag.Value, columnNamePattern)
-					tagModifications = append(tagModifications, &TagModification{
+					defineTagModifications = append(defineTagModifications, &defineTagModification{
 						structFieldName: nameIdent.Name,
 						previousTagNode: field.Tag, //完整替换原来的标签
 						modifiedTagCode: changeTag,
 					})
 				} else {
 					if cfg.options.skipBasicNaming && cfg.options.columnNamingStrategies[gormmomname.DefaultPattern].IsValidColumnName(schemaField.DBName) {
-						zaplog.LOG.Debug("SKIP SIMPLE FIELD", zap.String("struct_name", nameIdent.Name))
+						zaplog.LOG.Debug("SKIP SIMPLE FIELD", zap.String("struct_name", cfg.structSchemaInfo.structName), zap.String("struct_field_name", nameIdent.Name))
 						continue
 					}
 					columnNamePattern := cfg.options.defaultColumnNamePattern
 					if !cfg.options.columnNamingStrategies[columnNamePattern].IsValidColumnName(schemaField.DBName) { //按照比较宽泛的规则也校验不过的时候就需要修正字段名
 						changeTag := cfg.modifyFieldTagCorrection(schemaField, field.Tag.Value, columnNamePattern)
-						tagModifications = append(tagModifications, &TagModification{
+						defineTagModifications = append(defineTagModifications, &defineTagModification{
 							structFieldName: nameIdent.Name,
 							previousTagNode: field.Tag, //完整替换原来的标签
 							modifiedTagCode: changeTag,
@@ -168,10 +168,10 @@ func (cfg *Config) collectTagModifications(structContent *ast.StructType) []*Tag
 	}
 
 	zaplog.LOG.Debug("change_column_names")
-	for _, rep := range tagModifications {
+	for _, rep := range defineTagModifications {
 		zaplog.LOG.Debug("check_column:", zap.String("name", rep.structFieldName), zap.String("code", rep.modifiedTagCode))
 	}
-	return tagModifications
+	return defineTagModifications
 }
 
 func (cfg *Config) extractTagGetCnmPattern(tagCode string) string {
@@ -222,7 +222,7 @@ func (cfg *Config) modifyGormTagWithColumn(schemaField *schema.Field, tag string
 }
 
 func (cfg *Config) modifyPatternTagWithName(tag string, columnNamePattern gormmomname.ColumnNamePattern) string {
-	zaplog.LOG.Debug("new_fix_rule_tag", zap.String("rule_name", string(columnNamePattern)))
+	zaplog.LOG.Debug("modify-pattern-tag-with-name", zap.String("column_name_pattern", string(columnNamePattern)))
 
 	tagValue, sdx, edx := syntaxgo_tag.ExtractTagValueIndex(tag, cfg.options.namingTagName)
 	if sdx < 0 || edx < 0 { //表示没找到 gorm 相关的内容

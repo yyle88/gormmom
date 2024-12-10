@@ -20,14 +20,14 @@ unique:
 uniqueIndex:
 这个标签不仅表示字段的唯一性，还明确要求 GORM 生成一个带有名称的唯一索引。通常会按照 idx_<table_name>_<column_name> 的格式生成索引名称（具体格式可能因数据库而异）。
 */
-type paramExample3 struct {
+type Example3 struct {
 	V身份证号 string `gorm:"column:person_num;primaryKey"`
 	V学校编号 string `gorm:"column:school_num;uniqueIndex:udx_student_unique"`
 	V班级编号 string `gorm:"column:class_num;uniqueIndex:udx_student_unique"`
 	V班内排名 string `gorm:"column:student_num;uniqueIndex:udx_student_unique"`
-	V姓名   string `gorm:"column:name;index" mom:"rule:S63"`      //普通索引，默认名称不正确（现在的默认名称带中文）
-	V年龄   int    `gorm:"column:age;unique" mom:"rule:S63"`      //唯一约束，而非唯一索引，默认名称正确，使用的还是 uni_param_example3_age 这个约束名
-	V性别   bool   `gorm:"column:sex;uniqueIndex" mom:"rule:S63"` //唯一索引，带名称，默认名称不正确（现在的默认名称带中文）
+	V姓名   string `gorm:"column:name;index" mom:"naming:S63"`      //普通索引，默认名称不正确（现在的默认名称带中文）
+	V年龄   int    `gorm:"column:age;unique" mom:"naming:S63"`      //唯一约束，而非唯一索引，默认名称正确，使用的还是 uni_param_example3_age 这个约束名
+	V性别   bool   `gorm:"column:sex;uniqueIndex" mom:"naming:S63"` //唯一索引，带名称，默认名称不正确（现在的默认名称带中文）
 }
 
 func TestDryRunMigrate(t *testing.T) {
@@ -40,30 +40,30 @@ func TestDryRunMigrate(t *testing.T) {
 
 	require.NoError(t, db.Session(&gorm.Session{
 		DryRun: true,
-	}).AutoMigrate(&paramExample3{}))
+	}).AutoMigrate(&Example3{}))
 }
 
 func TestConfig_GenCode_GenIndexes(t *testing.T) {
-	cfg := NewConfig(NewStructSchemaInfoV2[paramExample3](runpath.CurrentPath()), NewOptions())
+	cfg := NewConfig(NewStructSchemaInfoV2[Example3](runpath.CurrentPath()), NewOptions())
 	t.Log(cfg)
 
 	newCode := cfg.CreateCode()
 	t.Log(string(newCode))
 }
 
-type paramExample4 struct {
+type Example4 struct {
 	V证号 string `gorm:"primaryKey"`
 	V姓名 string `gorm:"index"`
 	V年龄 int    `gorm:"unique"`
-	V性别 bool   `gorm:"column:sex;uniqueIndex" mom:"rule:S63"`
+	V性别 bool   `gorm:"column:sex;uniqueIndex" mom:"naming:S63"`
 }
 
-func (*paramExample4) TableName() string {
-	return "tbn88"
+func (*Example4) TableName() string {
+	return "example4"
 }
 
 func TestConfig_GenCode_GenIndexes_2(t *testing.T) {
-	cfg := NewConfig(NewStructSchemaInfoV2[paramExample4](runpath.CurrentPath()), NewOptions())
+	cfg := NewConfig(NewStructSchemaInfoV2[Example4](runpath.CurrentPath()), NewOptions())
 	t.Log(cfg)
 
 	newCode := cfg.CreateCode()

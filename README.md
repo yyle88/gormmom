@@ -1,34 +1,96 @@
+[![GitHub Workflow Status (branch)](https://img.shields.io/github/actions/workflow/status/yyle88/gormmom/release.yml?branch=main&label=BUILD)](https://github.com/yyle88/gormmom/actions/workflows/release.yml?query=branch%3Amain)
+[![GoDoc](https://pkg.go.dev/badge/github.com/yyle88/gormmom)](https://pkg.go.dev/github.com/yyle88/gormmom)
+[![Coverage Status](https://img.shields.io/coveralls/github/yyle88/gormmom/master.svg)](https://coveralls.io/github/yyle88/gormmom?branch=main)
+![Supported Go Versions](https://img.shields.io/badge/Go-1.22%2C%201.23-lightgrey.svg)
+[![GitHub Release](https://img.shields.io/github/release/yyle88/gormmom.svg)](https://github.com/yyle88/gormmom/releases)
+[![Go Report Card](https://goreportcard.com/badge/github.com/yyle88/gormmom)](https://goreportcard.com/report/github.com/yyle88/gormmom)
+
 # gormmom
-让你能够使用母语编程
 
-前段时间，华为的仓颉编程语言发布，但是遗憾的是它依然不能使用中文编程，但实际上这个需求始终是存在的
+**Empowering Native Language Programming, Simplifying GORM Tag Generation**
 
-我们在写golang的时候其实是可以使用母语编程的
+---
 
-比如:
+`gormmom` is a tool designed to automatically generate GORM tags, aimed at helping developers program in their native language while simplifying the process of defining GORM tags. The tool processes struct fields and automatically generates GORM-compliant tags, ensuring field names follow specific naming conventions.
+
+---
+
+## CHINESE README
+
+[中文说明](README.zh.md)
+
+---
+
+## Features
+
+- **Automatic GORM Tag Generation**: Automatically generates GORM tags for struct fields, such as `column`, `index`, `unique`, etc.
+- **Native Language Programming Support**: Allows developers to define struct fields in their native language (e.g., Chinese), reducing the difficulty of understanding business.
+
+---
+
+## Installation
+
+```bash
+go get github.com/yyle88/gormmom
 ```
-type A学生信息 struct {
-    V姓名 string
-    V性别 bool
-    V年龄 int
+
+---
+
+## Usage Example
+
+### Original Code (Native Language Programming)
+```go
+type Example struct {
+    V证号 string `gorm:"primaryKey"`
+    V姓名 string `gorm:"index"`
+    V年龄 int    `gorm:"unique"`
+    V性别 bool   `gorm:"column:sex;uniqueIndex" mom:"naming:S63"`
 }
-
-func (a *A客户信息) Get姓名() string { return a.V姓名 }
 ```
-这样其实是没问题的
 
-但是当涉及到 gorm 的时候则还是会有问题，因此需要显式的设置列名，添加gorm标签。
+### Generated Code (Automatic GORM Tag Generation)
+```go
+type Example struct {
+    V证号 string `gorm:"column:v_c18b_f753;primaryKey" mom:"naming:s63;"`
+    V姓名 string `gorm:"column:v_d359_0d54;index:idx_example_v_d359_0d54" mom:"naming:s63;idx:cnm;"`
+    V年龄 int    `gorm:"column:v_745e_849f;unique" mom:"naming:s63;"`
+    V性别 bool   `gorm:"column:V_2760_2B52;uniqueIndex:udx_example_V_2760_2B52" mom:"naming:S63;udx:cnm;"`
+}
+```
 
-这个工具提供了个简单的方法能帮你写gorm标签。
+---
 
-让你在用母语写go语言的时候更方便的使用母语。
+## Configuration Options
 
-因为我的英文实在是不太行，也找不到特别简单的单词描述，因此这个包就叫 "gormmom" 吧，程序员学好英语固然重要，但假设已经是四六级通过甚至十年编程经验还不能随心所欲，我觉得就得换换方向。
+- **naming**: Configures the naming convention for database column names.
+- **idx**: Configures the naming convention for single-column indexes.
+- **udx**: Configures the naming convention for single-column unique indexes.
 
-就比如这次编程的时候，就遇到个问题，就是解析标签提取内容时，推荐的单词是 `extract` 而我刚开始只能想到 `get` `parse` `obtain` 这些，我始终认为母语编程非常有必要，否则写的代码都是用意思不准确的单词拼凑的，也是不行。
+---
 
-而且我始终在纠结，在英文中所有的具有相对意义的单词，其长度都是不同的，比如`up down left right open close start stop public private`而程序员们只能挑选几个相对来说能用的单词来用，比如`get set` 或者 `start close` 或者 `create update select delete`，但也只是勉强能用，这使得非英语母语的人类看到这些，就始终会有一种很晕的感觉。
+## Design Ideas
 
-目前还没有添加翻译功能，还不能把母语自动翻译为英语，只是简单的提供了个编码的功能，以后也可以添加各种语言的翻译功能，或者基于汉语的拼音功能。但目前暂无这个计划，因为目前的功能基本是够用的。
+[README OLD DOC](internal/docs/README_OLD_DOC.en.md)
 
-这华为是真的不给力啊，白白浪费“仓颉”俩字，实际上汉语意思集中，而且字与字间不需要分隔符，也就不存在驼峰或者下划线的问题，还是很适合做编程语言的，希望以后有人能做个汉语编程的语言吧（当然也可能现在正有人在做）。
+---
+
+## License
+
+`gormmom` is open-source and released under the MIT License. See the [LICENSE](LICENSE) file for more information.
+
+---
+
+## Support
+
+Welcome to contribute to this project by submitting pull requests or reporting issues.
+
+If you find this package helpful, give it a star on GitHub!
+
+**Thank you for your support!**
+
+**Happy Coding with `gormmom`!** 🎉
+
+Give me stars. Thank you!!!
+
+## See stars
+[![see stars](https://starchart.cc/yyle88/gormmom.svg?variant=adaptive)](https://starchart.cc/yyle88/gormmom)

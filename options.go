@@ -11,18 +11,18 @@ type Options struct {
 	defaultColumnNamePattern   gormmomname.ColumnNamePattern //默认检查规则
 	columnNamingStrategies     map[gormmomname.ColumnNamePattern]gormmomname.Naming
 	skipBasicNaming            bool //是否跳过简单字段，有的字段虽然没有配置名称或者规则，但是它满足简单字段，就也不做任何处理
-	careIndexName              bool
+	renewIndexName             bool
 	indexNamingStrategies      map[gormidxname.IndexNamePattern]gormidxname.Naming
 }
 
 func NewOptions() *Options {
 	return &Options{
 		namingTagName:              "mom",
-		columnNamePatternFieldName: "rule",
+		columnNamePatternFieldName: "naming",
 		defaultColumnNamePattern:   gormmomname.DefaultPattern, //默认检查规则，就是查看是不是63个合法字符（即字母数组下划线等）
 		columnNamingStrategies:     gormmomname.GetNamingStrategies(),
 		skipBasicNaming:            true,
-		careIndexName:              true,
+		renewIndexName:             true,
 		indexNamingStrategies:      gormidxname.GetNamingStrategies(),
 	}
 }
@@ -52,8 +52,8 @@ func (cfg *Options) SetSkipBasicNaming(skipBasicNaming bool) *Options {
 	return cfg
 }
 
-func (cfg *Options) SetCareIndexName(careIndexName bool) *Options {
-	cfg.careIndexName = careIndexName
+func (cfg *Options) SetRenewIndexName(renewIndexName bool) *Options {
+	cfg.renewIndexName = renewIndexName
 	return cfg
 }
 

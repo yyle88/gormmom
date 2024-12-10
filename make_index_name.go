@@ -20,8 +20,8 @@ func (cfg *Config) validateCompositeIndex(indexName string, fields []schema.Inde
 	zaplog.LOG.Debug("validate-composite-index", zap.String("index_name", indexName), zap.Int("field_size", len(fields)))
 }
 
-func (cfg *Config) correctIndexNames(srcChanges []*TagModification) {
-	var mapTagModifications = make(map[string]*TagModification, len(srcChanges))
+func (cfg *Config) correctIndexNames(srcChanges []*defineTagModification) {
+	var mapTagModifications = make(map[string]*defineTagModification, len(srcChanges))
 	for _, rep := range srcChanges {
 		mapTagModifications[rep.structFieldName] = rep
 	}
@@ -44,12 +44,12 @@ func (cfg *Config) correctIndexNames(srcChanges []*TagModification) {
 	}
 }
 
-func (cfg *Config) rewriteSingleColumnIndex(schemaIndex schema.Index, change *TagModification) {
-	zaplog.LOG.Debug("rewrite_single_column_index", zap.String("table_name", cfg.structSchemaInfo.sch.Table), zap.String("field_name", change.structFieldName), zap.String("index_name", schemaIndex.Name), zap.String("index_class", schemaIndex.Class))
+func (cfg *Config) rewriteSingleColumnIndex(schemaIndex schema.Index, modification *defineTagModification) {
+	zaplog.LOG.Debug("rewrite_single_column_index", zap.String("table_name", cfg.structSchemaInfo.sch.Table), zap.String("field_name", modification.structFieldName), zap.String("index_name", schemaIndex.Name), zap.String("index_class", schemaIndex.Class))
 
-	columnName := cfg.extractTagFieldGetValue(change.modifiedTagCode, "gorm", "column")
+	columnName := cfg.extractTagFieldGetValue(modification.modifiedTagCode, "gorm", "column")
 	must.Nice(columnName)
-	zaplog.LOG.Debug("new_column_name", zap.String("name", change.structFieldName), zap.String("new_column_name", columnName))
+	zaplog.LOG.Debug("new_column_name", zap.String("name", modification.structFieldName), zap.String("new_column_name", columnName))
 
 	//这个是规则的枚举名称
 	var indexPrefixCate string
@@ -65,7 +65,7 @@ func (cfg *Config) rewriteSingleColumnIndex(schemaIndex schema.Index, change *Ta
 	var indexNamePattern gormidxname.IndexNamePattern
 	if indexPrefixCate != "" {
 		exist := false
-		indexNamePattern, exist = cfg.resolveIndexPattern(change, indexPrefixCate)
+		indexNamePattern, exist = cfg.resolveIndexPattern(modification, indexPrefixCate)
 		if !exist {
 			//就是不存在时 使用默认值 的情况
 			indexNamePattern = gormidxname.DefaultPattern
@@ -76,7 +76,7 @@ func (cfg *Config) rewriteSingleColumnIndex(schemaIndex schema.Index, change *Ta
 			zaplog.LOG.Debug("check_idx_match", zap.Bool("match", match))
 			if !match {
 				//当没有配置规则，而默认规则检查不正确时，就需要把规则名设置到标签里
-				change.modifiedTagCode = syntaxgo_tag.SetTagFieldValue(change.modifiedTagCode, cfg.options.namingTagName, indexPrefixCate, string(indexNamePattern), syntaxgo_tag.INSERT_LOCATION_END)
+				modification.modifiedTagCode = syntaxgo_tag.SetTagFieldValue(modification.modifiedTagCode, cfg.options.namingTagName, indexPrefixCate, string(indexNamePattern), syntaxgo_tag.INSERT_LOCATION_END)
 			} else {
 				//当没有配置规则，而且能够满足检查时，就不做任何事情（不要破坏用户自己配置的正确索引名）
 				return
@@ -89,7 +89,7 @@ func (cfg *Config) rewriteSingleColumnIndex(schemaIndex schema.Index, change *Ta
 
 	namingImp, ok := cfg.options.indexNamingStrategies[indexNamePattern]
 	must.TRUE(ok)
-	idxRes := must.Nice(namingImp.GenerateIndexName(schemaIndex, cfg.structSchemaInfo.sch.Table, change.structFieldName, columnName))
+	idxRes := must.Nice(namingImp.GenerateIndexName(schemaIndex, cfg.structSchemaInfo.sch.Table, modification.structFieldName, columnName))
 	if idxRes.NewIndexName == "" {
 		return
 	}
@@ -106,7 +106,7 @@ func (cfg *Config) rewriteSingleColumnIndex(schemaIndex schema.Index, change *Ta
 
 	zaplog.LOG.Debug("tag_field_name", zap.String("tag_field_name", idxRes.IndexTagFieldName))
 
-	gormTagContent, stx, etx := syntaxgo_tag.ExtractTagValueIndex(change.modifiedTagCode, "gorm")
+	gormTagContent, stx, etx := syntaxgo_tag.ExtractTagValueIndex(modification.modifiedTagCode, "gorm")
 	must.TRUE(stx >= 0)
 	must.TRUE(etx >= 0)
 	must.Nice(gormTagContent) //就是排除 gorm: 以后得到的双引号里面的内容
@@ -121,7 +121,7 @@ func (cfg *Config) rewriteSingleColumnIndex(schemaIndex schema.Index, change *Ta
 			if sfx > 0 && efx > 0 {
 				spx := stx + sfx //把起点坐标补上前面的
 				epx := stx + efx
-				change.modifiedTagCode = change.modifiedTagCode[:spx] + idxRes.NewIndexName + change.modifiedTagCode[epx:]
+				modification.modifiedTagCode = modification.modifiedTagCode[:spx] + idxRes.NewIndexName + modification.modifiedTagCode[epx:]
 				changed = true
 			}
 		}
@@ -131,22 +131,22 @@ func (cfg *Config) rewriteSingleColumnIndex(schemaIndex schema.Index, change *Ta
 		if sfx > 0 && efx > 0 {
 			spx := stx + sfx //把起点坐标补上前面的
 			epx := stx + efx
-			change.modifiedTagCode = change.modifiedTagCode[:spx] + idxRes.IndexTagFieldName + ":" + idxRes.NewIndexName + change.modifiedTagCode[epx:]
+			modification.modifiedTagCode = modification.modifiedTagCode[:spx] + idxRes.IndexTagFieldName + ":" + idxRes.NewIndexName + modification.modifiedTagCode[epx:]
 			changed = true
 		}
 	}
 	if !changed {
-		zaplog.LOG.Debug("not_change_tag", zap.String("not_change_tag", change.modifiedTagCode))
+		zaplog.LOG.Debug("not_change_tag", zap.String("not_change_tag", modification.modifiedTagCode))
 	}
 
-	zaplog.LOG.Debug("new_tag_string", zap.String("new_tag_string", change.modifiedTagCode))
+	zaplog.LOG.Debug("new_tag_string", zap.String("new_tag_string", modification.modifiedTagCode))
 }
 
-func (cfg *Config) resolveIndexPattern(change *TagModification, patternFieldName string) (gormidxname.IndexNamePattern, bool) {
-	var name = cfg.extractTagFieldGetValue(change.modifiedTagCode, cfg.options.namingTagName, patternFieldName)
+func (cfg *Config) resolveIndexPattern(modification *defineTagModification, patternFieldName string) (gormidxname.IndexNamePattern, bool) {
+	var name = cfg.extractTagFieldGetValue(modification.modifiedTagCode, cfg.options.namingTagName, patternFieldName)
 	if name == "" {
 		return gormidxname.DefaultPattern, false
 	}
-	zaplog.LOG.Debug("index_rule_name", zap.String("index_rule_name", name))
+	zaplog.LOG.Debug("resolve-index-pattern", zap.String("index_name_pattern", name))
 	return gormidxname.IndexNamePattern(name), true
 }

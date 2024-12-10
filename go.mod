@@ -14,7 +14,7 @@ require (
 	github.com/yyle88/syntaxgo v0.0.40
 	github.com/yyle88/zaplog v0.0.16
 	go.uber.org/zap v1.27.0
-	gorm.io/driver/sqlite v1.5.6
+	gorm.io/driver/sqlite v1.5.7
 	gorm.io/gorm v1.25.12
 )
 
