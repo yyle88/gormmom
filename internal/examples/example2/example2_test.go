@@ -4,17 +4,17 @@ import (
 	"testing"
 
 	"github.com/yyle88/gormmom"
-	"github.com/yyle88/gormmom/gormmomrule"
+	"github.com/yyle88/gormmom/gormmomname"
 	"github.com/yyle88/runpath/runtestpath"
 )
 
 func TestGen(t *testing.T) {
-	cfg := gormmom.NewConfig().SetDefaultRule(gormmomrule.DEFAULT)
+	srcPath := runtestpath.SrcPath(t)
+	param := gormmom.NewStructSchemaInfoV2[Example](srcPath)
+	param.Validate()
+
+	cfg := gormmom.NewConfig(param, gormmom.NewOptions().SetDefaultColumnNamePattern(gormmomname.DefaultPattern))
 	t.Log(cfg)
 
-	srcPath := runtestpath.SrcPath(t)
-	param := gormmom.NewParamV2[Example](srcPath)
-	param.CheckParam()
-
-	cfg.GenReplace(param)
+	cfg.GenReplace()
 }

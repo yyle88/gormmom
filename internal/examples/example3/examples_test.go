@@ -8,13 +8,14 @@ import (
 )
 
 func TestGen(t *testing.T) {
-	cfg := gormmom.NewConfig()
-	t.Log(cfg)
 
-	params := gormmom.NewParams(runpath.PARENT.Path(), []interface{}{
+	params := gormmom.NewStructSchemaInfos(runpath.PARENT.Path(), []interface{}{
 		&Example1{},
 		&Example2{},
 	})
 
-	cfg.GenReplaces(params)
+	cfg := gormmom.NewCodeGenerationConfig(params, gormmom.NewOptions())
+	t.Log(cfg)
+
+	cfg.GenReplaces()
 }

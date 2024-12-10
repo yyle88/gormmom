@@ -8,12 +8,13 @@ import (
 )
 
 func TestGen(t *testing.T) {
-	cfg := gormmom.NewConfig()
-	t.Log(cfg)
 
 	srcPath := runtestpath.SrcPath(t)
-	param := gormmom.NewParamV2[Example](srcPath)
-	param.CheckParam()
+	param := gormmom.NewStructSchemaInfoV2[Example](srcPath)
+	param.Validate()
 
-	cfg.GenReplace(param)
+	cfg := gormmom.NewConfig(param, gormmom.NewOptions())
+	t.Log(cfg)
+
+	cfg.GenReplace()
 }

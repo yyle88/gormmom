@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/yyle88/gormmom/gormmomrule"
+	"github.com/yyle88/gormmom/gormmomname"
 	"github.com/yyle88/runpath"
 )
 
@@ -28,23 +28,23 @@ type Example struct {
 }
 
 func TestGenCode(t *testing.T) {
-	cfg := NewConfig()
+	srcPath := runpath.CurrentPath()
+	param := NewStructSchemaInfoV2[Example](srcPath)
+
+	cfg := NewConfig(param, NewOptions())
 	t.Log(cfg)
 
-	srcPath := runpath.CurrentPath()
-	param := NewParamV2[Example](srcPath)
-
-	newCode := cfg.GenSource(param)
+	newCode := cfg.GenerateCode()
 	t.Log(string(newCode))
 }
 
 func TestGenCode_S63U(t *testing.T) {
-	cfg := NewConfig().SetDefaultRule(gormmomrule.DEFAULT)
+	srcPath := runpath.CurrentPath()
+	param := NewStructSchemaInfoV2[Example](srcPath)
+
+	cfg := NewConfig(param, NewOptions().SetDefaultColumnNamePattern(gormmomname.DefaultPattern))
 	t.Log(cfg)
 
-	srcPath := runpath.CurrentPath()
-	param := NewParamV2[Example](srcPath)
-
-	newCode := cfg.GenSource(param)
+	newCode := cfg.GenerateCode()
 	t.Log(string(newCode))
 }

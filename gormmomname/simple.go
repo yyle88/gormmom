@@ -1,4 +1,4 @@
-package gormmomrule
+package gormmomname
 
 import (
 	"strings"
@@ -9,7 +9,7 @@ import (
 )
 
 // 这是个简单的替换逻辑，能把特殊符号转换为相应的字母（但似乎也没有这个必要，因为字段名也不会包含这些字符）
-var replacementsMap = map[string]string{
+var punctuationReplacementMap = map[string]string{
 	"(": "x",
 	")": "x",
 	"（": "x",
@@ -23,12 +23,12 @@ var replacementsMap = map[string]string{
 	"：": "c",
 }
 
-func makeName(fieldName string) string {
+func simpleCreateColumnName(fieldName string) string {
 	var res strings.Builder
 	var preSimple = true
 	for i, c := range fieldName {
 		chs := string(c)
-		if replacement, ok := replacementsMap[chs]; ok {
+		if replacement, ok := punctuationReplacementMap[chs]; ok {
 			if i > 0 { //非首个时需要添加下划线以转换成蛇形的
 				res.WriteRune('_')
 			}
@@ -75,7 +75,7 @@ func makeName(fieldName string) string {
 	return res.String()
 }
 
-func checkLen(name string, size int) string {
+func ensureLength(name string, size int) string {
 	if len(name) > size {
 		panic(erero.Errorf("column_name=%v is too long. len=%v > size=%v", name, len(name), size))
 	}

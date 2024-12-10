@@ -44,13 +44,14 @@ func TestDryRunMigrate(t *testing.T) {
 }
 
 func TestConfig_GenCode_GenIndexes(t *testing.T) {
-	cfg := NewConfig()
-	t.Log(cfg)
 
 	srcPath := runpath.CurrentPath()
-	param := NewParamV2[paramExample3](srcPath)
+	param := NewStructSchemaInfoV2[paramExample3](srcPath)
 
-	newCode := cfg.GenSource(param)
+	cfg := NewConfig(param, NewOptions())
+	t.Log(cfg)
+
+	newCode := cfg.GenerateCode()
 	t.Log(string(newCode))
 }
 
@@ -66,12 +67,12 @@ func (*paramExample4) TableName() string {
 }
 
 func TestConfig_GenCode_GenIndexes_2(t *testing.T) {
-	cfg := NewConfig()
+	srcPath := runpath.CurrentPath()
+	param := NewStructSchemaInfoV2[paramExample4](srcPath)
+
+	cfg := NewConfig(param, NewOptions())
 	t.Log(cfg)
 
-	srcPath := runpath.CurrentPath()
-	param := NewParamV2[paramExample4](srcPath)
-
-	newCode := cfg.GenSource(param)
+	newCode := cfg.GenerateCode()
 	t.Log(string(newCode))
 }
