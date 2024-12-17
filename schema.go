@@ -12,18 +12,18 @@ import (
 	"gorm.io/gorm/schema"
 )
 
-type StructSchemaInfo struct {
+type SchemaCache struct {
 	sourcePath string
 	structName string
 	sch        *schema.Schema
 	schColumns map[string]*schema.Field
 }
 
-// NewStructSchemaInfo 创建参数信息
-func NewStructSchemaInfo(sourcePath string, structName string, sch *schema.Schema) *StructSchemaInfo {
+// NewSchemaCache 创建参数信息
+func NewSchemaCache(sourcePath string, structName string, sch *schema.Schema) *SchemaCache {
 	zaplog.LOG.Debug("new-struct-schema-info", zap.String("struct_name", structName), zap.String("source_path", sourcePath))
 
-	return &StructSchemaInfo{
+	return &SchemaCache{
 		sourcePath: sourcePath,
 		structName: structName,
 		sch:        sch,
@@ -31,17 +31,17 @@ func NewStructSchemaInfo(sourcePath string, structName string, sch *schema.Schem
 	}
 }
 
-// NewStructSchemaInfoV2 使用泛型创建参数信息。T 只能传类型名称而非带指针的类型名
-func NewStructSchemaInfoV2[T any](sourcePath string) *StructSchemaInfo {
-	return NewStructSchemaInfoV3(sourcePath, utils.Newp[T]())
+// NewSchemaCacheV2 使用泛型创建参数信息。T 只能传类型名称而非带指针的类型名
+func NewSchemaCacheV2[T any](sourcePath string) *SchemaCache {
+	return NewSchemaCacheV3(sourcePath, utils.Newp[T]())
 }
 
-// NewStructSchemaInfoV3 使用对象创建参数信息 object 传对象或者对象指针都行
-func NewStructSchemaInfoV3(sourcePath string, object interface{}) *StructSchemaInfo {
-	return NewStructSchemaInfo(sourcePath, syntaxgo_reflect.GetTypeNameV3(object), utils.ParseSchema(object))
+// NewSchemaCacheV3 使用对象创建参数信息 object 传对象或者对象指针都行
+func NewSchemaCacheV3(sourcePath string, object interface{}) *SchemaCache {
+	return NewSchemaCache(sourcePath, syntaxgo_reflect.GetTypeNameV3(object), utils.ParseSchema(object))
 }
 
-func (a *StructSchemaInfo) Validate() {
+func (a *SchemaCache) Validate() {
 	if a.sourcePath == "" {
 		panic(erero.New("a.source_path is none"))
 	}
@@ -56,8 +56,8 @@ func (a *StructSchemaInfo) Validate() {
 	}
 }
 
-func NewStructSchemaInfos(root string, objects []interface{}) []*StructSchemaInfo {
-	var structSchemaInfos = make([]*StructSchemaInfo, 0, len(objects))
+func NewSchemaCaches(root string, objects []interface{}) []*SchemaCache {
+	var schemaCaches = make([]*SchemaCache, 0, len(objects))
 	var paths = utils.ListGoFiles(root)
 	var exists = make(map[string]bool, len(objects)) //记住已经处理的数据
 	for _, sourcePath := range paths {
@@ -80,8 +80,8 @@ func NewStructSchemaInfos(root string, objects []interface{}) []*StructSchemaInf
 			}
 			exists[structName] = true
 
-			structSchemaInfos = append(structSchemaInfos, NewStructSchemaInfoV3(sourcePath, object))
+			schemaCaches = append(schemaCaches, NewSchemaCacheV3(sourcePath, object))
 		}
 	}
-	return structSchemaInfos
+	return schemaCaches
 }

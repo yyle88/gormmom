@@ -1,4 +1,4 @@
-package gormmom
+package gormmomzhcn
 
 import (
 	"testing"
@@ -7,10 +7,6 @@ import (
 	"github.com/yyle88/gormmom/gormmomname"
 	"github.com/yyle88/runpath"
 )
-
-func TestMain(m *testing.M) {
-	m.Run()
-}
 
 type Example struct {
 	ID   int32  `gorm:"column:id; primaryKey;" json:"id"`
@@ -27,18 +23,18 @@ type Example struct {
 	UpdatedAt time.Time `gorm:"autoUpdateTime"`
 }
 
-func TestGetNewCode(t *testing.T) {
-	cfg := NewConfig(NewSchemaCacheV2[Example](runpath.CurrentPath()), NewOptions())
+func TestGet新建代码(t *testing.T) {
+	cfg := NewT编码器(NewT表结构V2[Example](runpath.CurrentPath()), NewT配置项())
 	t.Log(cfg)
 
-	newCode := cfg.GetNewCode()
+	newCode := cfg.Get新建代码()
 	t.Log(string(newCode))
 }
 
-func TestGetNewCode_S63(t *testing.T) {
-	cfg := NewConfig(NewSchemaCacheV2[Example](runpath.CurrentPath()), NewOptions().WithDefaultColumnNamePattern(gormmomname.Uppercase63))
+func TestGet新建代码_S63(t *testing.T) {
+	cfg := NewT编码器(NewT表结构V2[Example](runpath.CurrentPath()), NewT配置项().With默认列名模式(gormmomname.Uppercase63))
 	t.Log(cfg)
 
-	newCode := cfg.GetNewCode()
+	newCode := cfg.Get新建代码()
 	t.Log(string(newCode))
 }

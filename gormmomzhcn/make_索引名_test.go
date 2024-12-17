@@ -1,4 +1,4 @@
-package gormmom
+package gormmomzhcn
 
 import (
 	"testing"
@@ -30,7 +30,7 @@ type Example3 struct {
 	V性别   bool   `gorm:"column:sex;uniqueIndex" mom:"naming:S63"` //唯一索引，带名称，默认名称不正确（现在的默认名称带中文）
 }
 
-func TestDryRunMigrate(t *testing.T) {
+func TestDB创建新表的试探(t *testing.T) {
 	db := done.VCE(gorm.Open(sqlite.Open("file::memory:?cache=private"), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
 	})).Nice()
@@ -43,11 +43,11 @@ func TestDryRunMigrate(t *testing.T) {
 	}).AutoMigrate(&Example3{}))
 }
 
-func TestConfig_GenCode_GenIndexes(t *testing.T) {
-	cfg := NewConfig(NewSchemaCacheV2[Example3](runpath.CurrentPath()), NewOptions())
+func TestT编码器_Get新建代码_改索引名(t *testing.T) {
+	cfg := NewT编码器(NewT表结构V2[Example3](runpath.CurrentPath()), NewT配置项())
 	t.Log(cfg)
 
-	newCode := cfg.GetNewCode()
+	newCode := cfg.Get新建代码()
 	t.Log(string(newCode))
 }
 
@@ -62,10 +62,10 @@ func (*Example4) TableName() string {
 	return "example4"
 }
 
-func TestConfig_GenCode_GenIndexes_2(t *testing.T) {
-	cfg := NewConfig(NewSchemaCacheV2[Example4](runpath.CurrentPath()), NewOptions())
+func TestT编码器_Get新建代码_改索引名_2(t *testing.T) {
+	cfg := NewT编码器(NewT表结构V2[Example4](runpath.CurrentPath()), NewT配置项())
 	t.Log(cfg)
 
-	newCode := cfg.GetNewCode()
+	newCode := cfg.Get新建代码()
 	t.Log(string(newCode))
 }

@@ -17,7 +17,7 @@ func (G *withTableCnmPattern) IsValidIndexName(indexName string) bool {
 }
 
 func (G *withTableCnmPattern) GenerateIndexName(schemaIndex schema.Index, tableName string, fieldName string, columnName string) *GenerateIndexNameResult {
-	zaplog.LOG.Warn(
+	zaplog.LOG.Debug(
 		"new_index_name",
 		zap.String("table_name", tableName),
 		zap.String("field_name", fieldName),

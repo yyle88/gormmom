@@ -5,15 +5,16 @@ go 1.22.8
 require (
 	github.com/stretchr/testify v1.10.0
 	github.com/yyle88/done v1.0.18
-	github.com/yyle88/erero v1.0.14
-	github.com/yyle88/formatgo v1.0.19
+	github.com/yyle88/erero v1.0.15
+	github.com/yyle88/formatgo v1.0.21
 	github.com/yyle88/gormcngen v1.0.35
 	github.com/yyle88/gormcnm v1.0.45
-	github.com/yyle88/must v0.0.9
+	github.com/yyle88/must v0.0.10
 	github.com/yyle88/osexistpath v0.0.13
-	github.com/yyle88/rese v0.0.1
+	github.com/yyle88/printgo v1.0.1
+	github.com/yyle88/rese v0.0.2
 	github.com/yyle88/runpath v1.0.22
-	github.com/yyle88/syntaxgo v0.0.41
+	github.com/yyle88/syntaxgo v0.0.43
 	github.com/yyle88/zaplog v0.0.16
 	go.uber.org/zap v1.27.0
 	gorm.io/driver/sqlite v1.5.7
@@ -29,12 +30,11 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/yyle88/mutexmap v1.0.8 // indirect
 	github.com/yyle88/neatjson v0.0.10 // indirect
-	github.com/yyle88/printgo v1.0.1 // indirect
 	github.com/yyle88/sortslice v1.0.6 // indirect
-	github.com/yyle88/sure v0.0.33 // indirect
-	github.com/yyle88/tern v0.0.3 // indirect
+	github.com/yyle88/sure v0.0.34 // indirect
+	github.com/yyle88/tern v0.0.4 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/exp v0.0.0-20241210194714-1829a127f884 // indirect
+	golang.org/x/exp v0.0.0-20241217172543-b2144cdd0a67 // indirect
 	golang.org/x/mod v0.22.0 // indirect
 	golang.org/x/sync v0.10.0 // indirect
 	golang.org/x/text v0.21.0 // indirect

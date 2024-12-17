@@ -12,5 +12,5 @@ func (G *uppercase63pattern) IsValidColumnName(columnName string) bool {
 }
 
 func (G *uppercase63pattern) GenerateColumnName(fieldName string) string {
-	return strings.ToUpper(ensureLength(simpleCreateColumnName(fieldName), 63))
+	return strings.ToUpper(ensureLength(simpleName(fieldName), 63))
 }

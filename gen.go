@@ -19,53 +19,53 @@ import (
 	"gorm.io/gorm/schema"
 )
 
-type CodeGenerationConfig struct {
+type ConfigBatch struct {
 	configs []*Config
 }
 
-func NewCodeGenerationConfig(structSchemaInfos []*StructSchemaInfo, options *Options) *CodeGenerationConfig {
+func NewConfigBatch(schemaCaches []*SchemaCache, options *Options) *ConfigBatch {
 	var configs []*Config
-	for _, param := range structSchemaInfos {
+	for _, param := range schemaCaches {
 		configs = append(configs, NewConfig(param, options))
 	}
-	return &CodeGenerationConfig{configs: configs}
+	return &ConfigBatch{configs: configs}
 }
 
-func (c *CodeGenerationConfig) GenReplaces() {
+func (c *ConfigBatch) GenReplaces() {
 	for _, cfg := range c.configs {
 		cfg.GenReplace()
 	}
 }
 
 type Config struct {
-	structSchemaInfo *StructSchemaInfo
-	options          *Options
+	schemaCache *SchemaCache
+	options     *Options
 }
 
-func NewConfig(structSchemaInfo *StructSchemaInfo, options *Options) *Config {
+func NewConfig(schemaCache *SchemaCache, options *Options) *Config {
 	return &Config{
-		structSchemaInfo: structSchemaInfo,
-		options:          options,
+		schemaCache: schemaCache,
+		options:     options,
 	}
 }
 
 func (cfg *Config) GenReplace() {
-	utils.MustWriteFile(cfg.structSchemaInfo.sourcePath, done.VAE(formatgo.FormatBytes(cfg.CreateCode())).Nice())
+	utils.MustWriteFile(cfg.schemaCache.sourcePath, done.VAE(formatgo.FormatBytes(cfg.GetNewCode())).Nice())
 }
 
-func (cfg *Config) CreateCode() []byte {
-	cfg.structSchemaInfo.Validate()
+func (cfg *Config) GetNewCode() []byte {
+	cfg.schemaCache.Validate()
 
-	sourceCode := done.VAE(os.ReadFile(cfg.structSchemaInfo.sourcePath)).Nice()
+	sourceCode := done.VAE(os.ReadFile(cfg.schemaCache.sourcePath)).Nice()
 
 	astBundle := done.VCE(syntaxgo_ast.NewAstBundleV1(sourceCode)).Nice()
 
 	astFile, fileSet := astBundle.GetBundle()
 
-	structContent, ok := syntaxgo_search.FindStructTypeByName(astFile, cfg.structSchemaInfo.structName)
+	structContent, ok := syntaxgo_search.FindStructTypeByName(astFile, cfg.schemaCache.structName)
 	if !ok {
 		const reason = "CAN NOT FIND STRUCT TYPE"
-		zaplog.LOG.Panic(reason, zap.String("struct_name", cfg.structSchemaInfo.structName))
+		zaplog.LOG.Panic(reason, zap.String("struct_name", cfg.schemaCache.structName))
 		panic(reason)
 	}
 	done.Done(ast.Print(fileSet, structContent))
@@ -110,23 +110,23 @@ func (cfg *Config) collectTagModifications(structContent *ast.StructType) []*def
 			zaplog.LOG.Debug("process", zap.String("struct_field_name:", nameIdent.Name))
 			zaplog.LOG.Debug("--")
 
-			schemaField, exist := cfg.structSchemaInfo.schColumns[nameIdent.Name]
+			schemaField, exist := cfg.schemaCache.schColumns[nameIdent.Name]
 			if !exist { //比如字段是 "V哈哈" 就没事 而假如是 "v哈哈" 或者 "哈哈" 就不行，因为非以大写字母开始的字段，就没有gorm的列名
-				zaplog.LOG.Debug("NO SCHEMA_FIELD - MAYBE NAME IS UNEXPORTED", zap.String("struct_name", cfg.structSchemaInfo.structName), zap.String("struct_field_name", nameIdent.Name))
+				zaplog.LOG.Debug("NO SCHEMA_FIELD - MAYBE NAME IS UNEXPORTED", zap.String("struct_name", cfg.schemaCache.structName), zap.String("struct_field_name", nameIdent.Name))
 				continue
 			}
 
 			if field.Tag == nil {
-				zaplog.LOG.Debug("NO TAG", zap.String("struct_name", cfg.structSchemaInfo.structName), zap.String("struct_field_name", nameIdent.Name))
+				zaplog.LOG.Debug("NO TAG", zap.String("struct_name", cfg.schemaCache.structName), zap.String("struct_field_name", nameIdent.Name))
 				if cfg.options.skipBasicNaming && cfg.options.columnNamingStrategies[gormmomname.DefaultPattern].IsValidColumnName(schemaField.DBName) {
-					zaplog.LOG.Debug("SKIP SIMPLE FIELD", zap.String("struct_name", cfg.structSchemaInfo.structName), zap.String("struct_field_name", nameIdent.Name))
+					zaplog.LOG.Debug("SKIP SIMPLE FIELD", zap.String("struct_name", cfg.schemaCache.structName), zap.String("struct_field_name", nameIdent.Name))
 					continue
 				}
 				columnNamePattern := cfg.options.defaultColumnNamePattern
 				if !cfg.options.columnNamingStrategies[columnNamePattern].IsValidColumnName(schemaField.DBName) {
 					if len(field.Names) >= 2 { //比如 a,b int 这种两个字段在一起，但其中一个字段的列名不正确时，就没法自动解决啦（其实有办法但不想实现，因为代价较大而没有收益）
 						const reason = "CAN NOT HANDLE THIS SITUATION"
-						zaplog.LOG.Panic(reason, zap.String("struct_name", cfg.structSchemaInfo.structName), zap.String("struct_field_name", nameIdent.Name))
+						zaplog.LOG.Panic(reason, zap.String("struct_name", cfg.schemaCache.structName), zap.String("struct_field_name", nameIdent.Name))
 						panic(reason) //这种情况下当有错时，就不处理这种情况，就需要程序员先把两个字段定义到两行里
 					}
 					changeTag := cfg.modifyFieldTagCorrection(schemaField, "``", columnNamePattern) //这里应该走创建标签的逻辑，但和修改标签的逻辑是相同的
@@ -148,7 +148,7 @@ func (cfg *Config) collectTagModifications(structContent *ast.StructType) []*def
 					})
 				} else {
 					if cfg.options.skipBasicNaming && cfg.options.columnNamingStrategies[gormmomname.DefaultPattern].IsValidColumnName(schemaField.DBName) {
-						zaplog.LOG.Debug("SKIP SIMPLE FIELD", zap.String("struct_name", cfg.structSchemaInfo.structName), zap.String("struct_field_name", nameIdent.Name))
+						zaplog.LOG.Debug("SKIP SIMPLE FIELD", zap.String("struct_name", cfg.schemaCache.structName), zap.String("struct_field_name", nameIdent.Name))
 						continue
 					}
 					columnNamePattern := cfg.options.defaultColumnNamePattern

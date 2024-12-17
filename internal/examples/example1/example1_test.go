@@ -8,7 +8,7 @@ import (
 )
 
 func TestGen(t *testing.T) {
-	param := gormmom.NewStructSchemaInfoV2[Example](runtestpath.SrcPath(t))
+	param := gormmom.NewSchemaCacheV2[Example](runtestpath.SrcPath(t))
 	param.Validate()
 
 	cfg := gormmom.NewConfig(param, gormmom.NewOptions())

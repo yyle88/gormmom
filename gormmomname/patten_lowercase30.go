@@ -10,5 +10,5 @@ func (G *lowercase30pattern) IsValidColumnName(columnName string) bool {
 }
 
 func (G *lowercase30pattern) GenerateColumnName(fieldName string) string {
-	return ensureLength(simpleCreateColumnName(fieldName), 30)
+	return ensureLength(simpleName(fieldName), 30)
 }

@@ -9,5 +9,5 @@ func (G *lowercase63pattern) IsValidColumnName(columnName string) bool {
 }
 
 func (G *lowercase63pattern) GenerateColumnName(fieldName string) string {
-	return ensureLength(simpleCreateColumnName(fieldName), 63)
+	return ensureLength(simpleName(fieldName), 63)
 }

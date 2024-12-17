@@ -27,37 +27,37 @@ func NewOptions() *Options {
 	}
 }
 
-func (cfg *Options) SetNamingTagName(namingTagName string) *Options {
-	cfg.namingTagName = namingTagName
-	return cfg
+func (opt *Options) WithNamingTagName(namingTagName string) *Options {
+	opt.namingTagName = namingTagName
+	return opt
 }
 
-func (cfg *Options) SetColumnNamePatternFieldName(columnNamePatternFieldName string) *Options {
-	cfg.columnNamePatternFieldName = columnNamePatternFieldName
-	return cfg
+func (opt *Options) WithColumnNamePatternFieldName(columnNamePatternFieldName string) *Options {
+	opt.columnNamePatternFieldName = columnNamePatternFieldName
+	return opt
 }
 
-func (cfg *Options) SetDefaultColumnNamePattern(pattern gormmomname.ColumnNamePattern) *Options {
-	cfg.defaultColumnNamePattern = pattern
-	return cfg
+func (opt *Options) WithDefaultColumnNamePattern(pattern gormmomname.ColumnNamePattern) *Options {
+	opt.defaultColumnNamePattern = pattern
+	return opt
 }
 
-func (cfg *Options) SetColumnNamingStrategies(pattern gormmomname.ColumnNamePattern, naming gormmomname.Naming) *Options {
-	cfg.columnNamingStrategies[pattern] = naming
-	return cfg
+func (opt *Options) WithColumnNamingStrategies(pattern gormmomname.ColumnNamePattern, naming gormmomname.Naming) *Options {
+	opt.columnNamingStrategies[pattern] = naming
+	return opt
 }
 
-func (cfg *Options) SetSkipBasicNaming(skipBasicNaming bool) *Options {
-	cfg.skipBasicNaming = skipBasicNaming
-	return cfg
+func (opt *Options) WithSkipBasicNaming(skipBasicNaming bool) *Options {
+	opt.skipBasicNaming = skipBasicNaming
+	return opt
 }
 
-func (cfg *Options) SetRenewIndexName(renewIndexName bool) *Options {
-	cfg.renewIndexName = renewIndexName
-	return cfg
+func (opt *Options) WithRenewIndexName(renewIndexName bool) *Options {
+	opt.renewIndexName = renewIndexName
+	return opt
 }
 
-func (cfg *Options) SetIndexNamingStrategies(pattern gormidxname.IndexNamePattern, naming gormidxname.Naming) *Options {
-	cfg.indexNamingStrategies[pattern] = naming
-	return cfg
+func (opt *Options) WithIndexNamingStrategies(pattern gormidxname.IndexNamePattern, naming gormidxname.Naming) *Options {
+	opt.indexNamingStrategies[pattern] = naming
+	return opt
 }

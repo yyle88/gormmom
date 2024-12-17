@@ -12,5 +12,5 @@ func (G *uppercase30pattern) IsValidColumnName(columnName string) bool {
 }
 
 func (G *uppercase30pattern) GenerateColumnName(fieldName string) string {
-	return strings.ToUpper(ensureLength(simpleCreateColumnName(fieldName), 30))
+	return strings.ToUpper(ensureLength(simpleName(fieldName), 30))
 }

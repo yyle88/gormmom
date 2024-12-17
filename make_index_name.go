@@ -26,8 +26,8 @@ func (cfg *Config) correctIndexNames(srcChanges []*defineTagModification) {
 		mapTagModifications[rep.structFieldName] = rep
 	}
 
-	schemaIndexes := cfg.structSchemaInfo.sch.ParseIndexes()
-	zaplog.LOG.Debug("check_indexes", zap.String("object_class", cfg.structSchemaInfo.sch.Name), zap.String("table_name", cfg.structSchemaInfo.sch.Table), zap.Int("index_count", len(schemaIndexes)))
+	schemaIndexes := cfg.schemaCache.sch.ParseIndexes()
+	zaplog.LOG.Debug("check_indexes", zap.String("object_class", cfg.schemaCache.sch.Name), zap.String("table_name", cfg.schemaCache.sch.Table), zap.Int("index_count", len(schemaIndexes)))
 	for _, node := range schemaIndexes {
 		zaplog.LOG.Debug("foreach_index")
 		zaplog.LOG.Debug("check_a_index", zap.String("index_name", node.Name), zap.Int("field_size", len(node.Fields)))
@@ -45,7 +45,7 @@ func (cfg *Config) correctIndexNames(srcChanges []*defineTagModification) {
 }
 
 func (cfg *Config) rewriteSingleColumnIndex(schemaIndex schema.Index, modification *defineTagModification) {
-	zaplog.LOG.Debug("rewrite_single_column_index", zap.String("table_name", cfg.structSchemaInfo.sch.Table), zap.String("field_name", modification.structFieldName), zap.String("index_name", schemaIndex.Name), zap.String("index_class", schemaIndex.Class))
+	zaplog.LOG.Debug("rewrite_single_column_index", zap.String("table_name", cfg.schemaCache.sch.Table), zap.String("field_name", modification.structFieldName), zap.String("index_name", schemaIndex.Name), zap.String("index_class", schemaIndex.Class))
 
 	columnName := cfg.extractTagFieldGetValue(modification.modifiedTagCode, "gorm", "column")
 	must.Nice(columnName)
@@ -89,7 +89,7 @@ func (cfg *Config) rewriteSingleColumnIndex(schemaIndex schema.Index, modificati
 
 	namingImp, ok := cfg.options.indexNamingStrategies[indexNamePattern]
 	must.TRUE(ok)
-	idxRes := must.Nice(namingImp.GenerateIndexName(schemaIndex, cfg.structSchemaInfo.sch.Table, modification.structFieldName, columnName))
+	idxRes := must.Nice(namingImp.GenerateIndexName(schemaIndex, cfg.schemaCache.sch.Table, modification.structFieldName, columnName))
 	if idxRes.NewIndexName == "" {
 		return
 	}
