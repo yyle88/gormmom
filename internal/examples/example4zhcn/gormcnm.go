@@ -25,11 +25,8 @@ type exampleColumns struct {
 	// The column names and types of the model's columns // 模型各列的列名和类型
 	ID        gormcnm.ColumnName[int32]
 	V名称       gormcnm.ColumnName[string]
-	V字段       gormcnm.ColumnName[string]
 	V性别       gormcnm.ColumnName[string]
-	V特殊       gormcnm.ColumnName[string]
 	V年龄       gormcnm.ColumnName[int]
-	Rank      gormcnm.ColumnName[int32]
 	V身高       gormcnm.ColumnName[int32]
 	V体重       gormcnm.ColumnName[int32]
 	CreatedAt gormcnm.ColumnName[time.Time]
