@@ -1,4 +1,4 @@
-package example2
+package example1enus
 
 import (
 	"testing"
@@ -13,7 +13,7 @@ func TestGenerate(t *testing.T) {
 	t.Log(absPath)
 
 	options := gormcngen.NewOptions().
-		WithColumnClassExportable(false). //中间类型名称的样式为非导出的 exampleColumns
+		WithColumnClassExportable(true). //中间类型名称的样式为非导出的 exampleColumns
 		WithColumnsMethodRecvName("T").
 		WithColumnsCheckFieldType(true)
 

@@ -1,4 +1,4 @@
-package example3
+package example4zhcn
 
 import (
 	"testing"
@@ -13,10 +13,10 @@ func TestGenerate(t *testing.T) {
 	t.Log(absPath)
 
 	options := gormcngen.NewOptions().
-		WithColumnClassExportable(true). //中间类型名称的样式为非导出的 exampleColumns
+		WithColumnClassExportable(false). //中间类型名称的样式为非导出的 exampleColumns
 		WithColumnsMethodRecvName("T").
 		WithColumnsCheckFieldType(true)
 
-	cfg := gormcngen.NewConfigs([]interface{}{&Example1{}, &Example2{}}, options, absPath)
+	cfg := gormcngen.NewConfigs([]interface{}{&Example{}}, options, absPath)
 	cfg.Gen()
 }

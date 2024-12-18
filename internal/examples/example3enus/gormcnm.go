@@ -1,4 +1,4 @@
-package example3
+package example3enus
 
 import (
 	"time"
