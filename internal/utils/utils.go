@@ -41,11 +41,6 @@ func ListGoFiles(root string) []string {
 
 func NewBoolean(b bool) bool { return b }
 
-func Newp[T any]() *T {
-	var v T
-	return &v
-}
-
 func ParseSchema(object interface{}) *schema.Schema {
 	return done.VCE(schema.Parse(object, &sync.Map{}, &schema.NamingStrategy{
 		SingularTable: false, //和默认值相同

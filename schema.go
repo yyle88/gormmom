@@ -33,7 +33,7 @@ func NewSchemaCache(sourcePath string, structName string, sch *schema.Schema) *S
 
 // NewSchemaCacheV2 使用泛型创建参数信息。T 只能传类型名称而非带指针的类型名
 func NewSchemaCacheV2[T any](sourcePath string) *SchemaCache {
-	return NewSchemaCacheV3(sourcePath, utils.Newp[T]())
+	return NewSchemaCacheV3(sourcePath, new(T))
 }
 
 // NewSchemaCacheV3 使用对象创建参数信息 object 传对象或者对象指针都行
