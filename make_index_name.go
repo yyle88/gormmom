@@ -44,7 +44,7 @@ func (cfg *Config) correctIndexNames(srcChanges []*defineTagModification) {
 	}
 }
 
-func (cfg *Config) rewriteSingleColumnIndex(schemaIndex schema.Index, modification *defineTagModification) {
+func (cfg *Config) rewriteSingleColumnIndex(schemaIndex *schema.Index, modification *defineTagModification) {
 	zaplog.LOG.Debug("rewrite_single_column_index", zap.String("table_name", cfg.schemaCache.sch.Table), zap.String("field_name", modification.structFieldName), zap.String("index_name", schemaIndex.Name), zap.String("index_class", schemaIndex.Class))
 
 	columnName := cfg.extractTagFieldGetValue(modification.modifiedTagCode, "gorm", "column")

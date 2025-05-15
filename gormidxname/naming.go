@@ -18,7 +18,7 @@ const (
 
 type Naming interface {
 	IsValidIndexName(indexName string) bool
-	GenerateIndexName(schemaIndex schema.Index, tableName string, fieldName string, columnName string) *GenerateIndexNameResult
+	GenerateIndexName(schemaIndex *schema.Index, tableName string, fieldName string, columnName string) *GenerateIndexNameResult
 }
 
 type GenerateIndexNameResult struct {

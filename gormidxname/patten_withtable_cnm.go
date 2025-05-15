@@ -16,7 +16,7 @@ func (G *withTableCnmPattern) IsValidIndexName(indexName string) bool {
 	return regexp.MustCompile(`^[a-zA-Z0-9_]{1,63}$`).MatchString(indexName)
 }
 
-func (G *withTableCnmPattern) GenerateIndexName(schemaIndex schema.Index, tableName string, fieldName string, columnName string) *GenerateIndexNameResult {
+func (G *withTableCnmPattern) GenerateIndexName(schemaIndex *schema.Index, tableName string, fieldName string, columnName string) *GenerateIndexNameResult {
 	zaplog.LOG.Debug(
 		"new_index_name",
 		zap.String("table_name", tableName),
