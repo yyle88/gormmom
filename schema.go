@@ -1,8 +1,9 @@
 package gormmom
 
 import (
-	"github.com/yyle88/erero"
+	"github.com/emirpasic/gods/v2/maps/linkedhashmap"
 	"github.com/yyle88/gormmom/internal/utils"
+	"github.com/yyle88/must"
 	"github.com/yyle88/rese"
 	"github.com/yyle88/syntaxgo/syntaxgo_ast"
 	"github.com/yyle88/syntaxgo/syntaxgo_reflect"
@@ -12,18 +13,19 @@ import (
 	"gorm.io/gorm/schema"
 )
 
-type SchemaCache struct {
+// SchemaX 结构体的位置和结构体里的字段信息
+type SchemaX struct {
 	sourcePath string
 	structName string
 	sch        *schema.Schema
-	schColumns map[string]*schema.Field
+	schColumns *linkedhashmap.Map[string, *schema.Field]
 }
 
-// NewSchemaCache 创建参数信息
-func NewSchemaCache(sourcePath string, structName string, sch *schema.Schema) *SchemaCache {
+// NewSchemaX 读取结构体字段信息
+func NewSchemaX(sourcePath string, structName string, sch *schema.Schema) *SchemaX {
 	zaplog.LOG.Debug("new-struct-schema-info", zap.String("struct_name", structName), zap.String("source_path", sourcePath))
 
-	return &SchemaCache{
+	return &SchemaX{
 		sourcePath: sourcePath,
 		structName: structName,
 		sch:        sch,
@@ -31,33 +33,25 @@ func NewSchemaCache(sourcePath string, structName string, sch *schema.Schema) *S
 	}
 }
 
-// NewSchemaCacheV2 使用泛型创建参数信息。T 只能传类型名称而非带指针的类型名
-func NewSchemaCacheV2[T any](sourcePath string) *SchemaCache {
-	return NewSchemaCacheV3(sourcePath, new(T))
+// NewSchemaX2 使用泛型创建参数信息。T 只能传类型名称而非带指针的类型名
+func NewSchemaX2[T any](sourcePath string) *SchemaX {
+	return NewSchemaX3(sourcePath, new(T))
 }
 
-// NewSchemaCacheV3 使用对象创建参数信息 object 传对象或者对象指针都行
-func NewSchemaCacheV3(sourcePath string, object interface{}) *SchemaCache {
-	return NewSchemaCache(sourcePath, syntaxgo_reflect.GetTypeNameV3(object), utils.ParseSchema(object))
+// NewSchemaX3 使用对象创建参数信息 object 传对象或者对象指针都行
+func NewSchemaX3(sourcePath string, object interface{}) *SchemaX {
+	return NewSchemaX(sourcePath, syntaxgo_reflect.GetTypeNameV3(object), utils.ParseSchema(object))
 }
 
-func (a *SchemaCache) Validate() {
-	if a.sourcePath == "" {
-		panic(erero.New("a.source_path is none"))
-	}
-	if a.structName == "" {
-		panic(erero.New("a.struct_name is none"))
-	}
-	if a.sch == nil {
-		panic(erero.New("a.sch is none"))
-	}
-	if a.schColumns == nil {
-		panic(erero.New("a.sch_columns is none"))
-	}
+func (a *SchemaX) Validate() {
+	must.Nice(a.sourcePath)
+	must.Nice(a.structName)
+	must.Full(a.sch)
+	must.Full(a.schColumns)
 }
 
-func NewSchemaCaches(root string, objects []interface{}) []*SchemaCache {
-	var schemaCaches = make([]*SchemaCache, 0, len(objects))
+func NewSchemaXs(root string, objects []interface{}) []*SchemaX {
+	var schemaXs = make([]*SchemaX, 0, len(objects))
 	var paths = utils.ListGoFiles(root)
 	var exists = make(map[string]bool, len(objects)) //记住已经处理的数据
 	for _, sourcePath := range paths {
@@ -80,8 +74,8 @@ func NewSchemaCaches(root string, objects []interface{}) []*SchemaCache {
 			}
 			exists[structName] = true
 
-			schemaCaches = append(schemaCaches, NewSchemaCacheV3(sourcePath, object))
+			schemaXs = append(schemaXs, NewSchemaX3(sourcePath, object))
 		}
 	}
-	return schemaCaches
+	return schemaXs
 }

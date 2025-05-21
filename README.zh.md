@@ -37,25 +37,38 @@ type Example struct {
     V证号 string `gorm:"primaryKey"`
     V姓名 string `gorm:"index"`
     V年龄 int    `gorm:"unique"`
-    V性别 bool   `gorm:"column:sex;uniqueIndex" mom:"naming:S63"`
+    V性别 bool   `gorm:"column:sex;uniqueIndex" mom:"mcp:S63"`
 }
 ```
 
 ### 输出代码（自动生成 GORM 标签）
 ```go
 type Example struct {
-    V证号 string `gorm:"column:v_c18b_f753;primaryKey" mom:"naming:s63;"`
-    V姓名 string `gorm:"column:v_d359_0d54;index:idx_example_v_d359_0d54" mom:"naming:s63;idx:cnm;"`
-    V年龄 int    `gorm:"column:v_745e_849f;unique" mom:"naming:s63;"`
-    V性别 bool   `gorm:"column:V_2760_2B52;uniqueIndex:udx_example_V_2760_2B52" mom:"naming:S63;udx:cnm;"`
+    V证号 string `gorm:"column:v_c18b_f753;primaryKey" mom:"mcp:s63;"`
+    V姓名 string `gorm:"column:v_d359_0d54;index:idx_example_v_d359_0d54" mom:"mcp:s63;idx:cnm;"`
+    V年龄 int    `gorm:"column:v_745e_849f;unique" mom:"mcp:s63;"`
+    V性别 bool   `gorm:"column:V_2760_2B52;uniqueIndex:udx_example_V_2760_2B52" mom:"mcp:S63;udx:cnm;"`
 }
+```
+
+### 查询语句 (使用 repo 查询数据)
+```go
+example, err := repo.Repo(caseDB).First(func(db *gorm.DB, cls *exampleColumns) *gorm.DB {
+    return db.Where(cls.V名称.Eq(name))
+})
+```
+
+```go
+results, err := repo.Repo(caseDB).Find(func(db *gorm.DB, cls *exampleColumns) *gorm.DB {
+    return db.Where(cls.V名称.In(names))
+})
 ```
 
 ---
 
 ## 配置选项
 
-- **naming**：配置数据表列名的命名规则。
+- **mcp**：配置数据表列名的命名规则。
 - **idx**：配置单键普通索引的命名规则。
 - **udx**：配置单键唯一索引的命名规则。
 

@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/emirpasic/gods/v2/maps/linkedhashmap"
 	"github.com/yyle88/done"
 	"github.com/yyle88/gormcngen"
 	"github.com/yyle88/must"
@@ -12,18 +13,18 @@ import (
 )
 
 // NewSchemaFieldsMap 把字段列表由 slice 转换为 map，以结构体中go的字段名为主键
-func NewSchemaFieldsMap(sch *schema.Schema) map[string]*schema.Field {
+func NewSchemaFieldsMap(sch *schema.Schema) *linkedhashmap.Map[string, *schema.Field] {
 	gormcngen.ShowSchemaEnglish(sch)
 	gormcngen.ShowSchemaChinese(sch)
 
-	var mp = make(map[string]*schema.Field, len(sch.Fields))
+	res := linkedhashmap.New[string, *schema.Field]()
 	for _, field := range sch.Fields {
-		mp[field.Name] = field //键是Go结构体成员名称
+		res.Put(field.Name, field) //键是Go结构体成员名称
 	}
-	return mp
+	return res
 }
 
-func MustWriteFile(path string, data []byte) {
+func WriteFile(path string, data []byte) {
 	must.Done(os.WriteFile(path, data, 0644))
 }
 
@@ -39,19 +40,9 @@ func ListGoFiles(root string) []string {
 	return paths
 }
 
-func NewBoolean(b bool) bool { return b }
-
 func ParseSchema(object interface{}) *schema.Schema {
 	return done.VCE(schema.Parse(object, &sync.Map{}, &schema.NamingStrategy{
 		SingularTable: false, //和默认值相同
 		NoLowerCase:   false, //和默认值相同
 	})).Nice()
-}
-
-func CloneMap[K comparable, v any](a map[K]v) map[K]v {
-	var mp = make(map[K]v, len(a))
-	for k, v := range a {
-		mp[k] = v
-	}
-	return mp
 }

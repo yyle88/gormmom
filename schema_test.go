@@ -14,12 +14,12 @@ type Example1 struct {
 }
 
 func TestNewStructSchemaInfoV2(t *testing.T) {
-	param := NewSchemaCacheV2[Example1](runpath.CurrentPath())
+	param := NewSchemaX2[Example1](runpath.CurrentPath())
 	param.Validate()
 }
 
 func TestNewStructSchemaInfoV3(t *testing.T) {
-	param := NewSchemaCacheV3(runpath.CurrentPath(), &Example1{})
+	param := NewSchemaX3(runpath.CurrentPath(), &Example1{})
 	param.Validate()
 }
 
@@ -30,6 +30,6 @@ type Example2 struct {
 }
 
 func TestNewStructSchemaInfos(t *testing.T) {
-	params := NewSchemaCaches(runpath.PARENT.Path(), []any{&Example1{}, &Example2{}})
+	params := NewSchemaXs(runpath.PARENT.Path(), []any{&Example1{}, &Example2{}})
 	require.Len(t, params, 2)
 }

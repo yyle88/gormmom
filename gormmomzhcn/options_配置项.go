@@ -16,41 +16,46 @@ func NewT配置项() *T配置项 {
 	}
 }
 
-func (opt *T配置项) With命名总标签名(namingTagName string) *T配置项 {
-	opt.options.WithNamingTagName(namingTagName)
+func (opt *T配置项) With命名总标签名(tagName string) *T配置项 {
+	opt.options.WithTagName(tagName)
 	return opt
 }
 
-func (opt *T配置项) With列名模式字段(columnNamePatternFieldName string) *T配置项 {
-	opt.options.WithColumnNamePatternFieldName(columnNamePatternFieldName)
+func (opt *T配置项) With列名模式标签(columnNamingSubTagName string) *T配置项 {
+	opt.options.WithColumnNamingSubTagName(columnNamingSubTagName)
 	return opt
 }
 
-func (opt *T配置项) With默认列名模式(pattern gormmomname.ColumnNamePattern) *T配置项 {
-	opt.options.WithDefaultColumnNamePattern(pattern)
+func (opt *T配置项) With列名命名样式(pattern gormmomname.Pattern) *T配置项 {
+	opt.options.WithColumnPattern(pattern)
 	return opt
 }
 
-func (opt *T配置项) With列名命名策略(pattern gormmomname.ColumnNamePattern, naming gormmomname.Naming) *T配置项 {
-	opt.options.WithColumnNamingStrategies(pattern, naming)
+func (opt *T配置项) With默认列名样式(pattern gormmomname.Pattern) *T配置项 {
+	opt.options.WithDefaultColumnPattern(pattern)
 	return opt
 }
 
-func (opt *T配置项) With跳过基本命名(skipBasicNaming bool) *T配置项 {
-	opt.options.WithSkipBasicNaming(skipBasicNaming)
+func (opt *T配置项) With跳过基本列名(skipBasicColumnName bool) *T配置项 {
+	opt.options.WithSkipBasicColumnName(skipBasicColumnName)
 	return opt
 }
 
-func (opt *T配置项) With重命名索引名(renewIndexName bool) *T配置项 {
+func (opt *T配置项) With重新命名索引(renewIndexName bool) *T配置项 {
 	opt.options.WithRenewIndexName(renewIndexName)
 	return opt
 }
 
-func (opt *T配置项) With索引命名策略(pattern gormidxname.IndexNamePattern, naming gormidxname.Naming) *T配置项 {
-	opt.options.WithIndexNamingStrategies(pattern, naming)
+func (opt *T配置项) With索引命名样式(pattern gormidxname.Pattern) *T配置项 {
+	opt.options.WithIndexPattern(pattern)
 	return opt
 }
 
-func (opt *T配置项) Options() *gormmom.Options {
+func (opt *T配置项) With默认索引样式(pattern gormidxname.Pattern) *T配置项 {
+	opt.options.WithDefaultIndexPattern(pattern)
+	return opt
+}
+
+func (opt *T配置项) GetOptions() *gormmom.Options {
 	return opt.options
 }

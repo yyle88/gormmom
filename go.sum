@@ -1,7 +1,13 @@
+github.com/brianvoe/gofakeit/v7 v7.2.1 h1:AGojgaaCdgq4Adzrd2uWdbGNDyX6MWNhHdQBraNfOHI=
+github.com/brianvoe/gofakeit/v7 v7.2.1/go.mod h1:QXuPeBw164PJCzCUZVmgpgHJ3Llj49jSLVkKPMtxtxA=
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc h1:U9qPSI2PIWSS1VwoXQT9A3Wy9MM3WgvqSxFWenqJduM=
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/emirpasic/gods/v2 v2.0.0-alpha h1:dwFlh8pBg1VMOXWGipNMRt8v96dKAIvBehtCt6OtunU=
+github.com/emirpasic/gods/v2 v2.0.0-alpha/go.mod h1:W0y4M2dtBB9U5z3YlghmpuUhiaZT2h6yoeE+C1sCp6A=
 github.com/google/go-cmp v0.6.0 h1:ofyhxvXcZhMsU5ulbFiLKl/XBFqE1GSq7atu8tAmTRI=
 github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
+github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
+github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/jinzhu/inflection v1.0.0 h1:K317FqzuhWc8YvSVlFMCCUb36O/S9MCKRDI7QkRKD/E=
 github.com/jinzhu/inflection v1.0.0/go.mod h1:h+uFLlag+Qp1Va5pdKtLDYj+kHp5pxUVkryuEj+Srlc=
 github.com/jinzhu/now v1.1.5 h1:/o9tlHleP7gOFmsnYNz3RGnqzefHA47wQpKrrdTIwXQ=
@@ -30,6 +36,8 @@ github.com/yyle88/gormcngen v1.0.43 h1:ZU1nRbWe+nk0umtwYrfgvoqKHxnyql0MJXoLPgg6L
 github.com/yyle88/gormcngen v1.0.43/go.mod h1:cfOwFSv00MDwIVZJt4NiGjN1hUdQLsUvNffOE+KRYl8=
 github.com/yyle88/gormcnm v1.0.53 h1:VtEHANzAwsZXF+yXqs3ksiaPb/eIX9ZA/jceJfXzTiA=
 github.com/yyle88/gormcnm v1.0.53/go.mod h1:K1cG2Ic/A0yFHu/4FDgEIYpFUKx1wSqNdjyv2n5638I=
+github.com/yyle88/gormrepo v1.0.47 h1:noRvpH13U5l6VCw+H/RyR1wEHDsbxAH9arJdmiUMW/U=
+github.com/yyle88/gormrepo v1.0.47/go.mod h1:OjhTx2frKpggxSKKI3bppodt2C6HyF5tofRkIGCCtyM=
 github.com/yyle88/must v0.0.23 h1:fbOoobIqTq4vkGDJOFQWHbcPw4lG3MbyAe+aXFWcaiU=
 github.com/yyle88/must v0.0.23/go.mod h1:grBswgDZIpUOjs4ujCj0WXMGVOU/fL9xjMS3D50pfaU=
 github.com/yyle88/mutexmap v1.0.13 h1:wp/6mv/gsC2DSqNbhMYiil4gtnb0sDCIhHHIHK2h0cQ=
