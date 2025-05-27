@@ -10,7 +10,7 @@ require (
 	github.com/yyle88/formatgo v1.0.24
 	github.com/yyle88/gormcngen v1.0.43
 	github.com/yyle88/gormcnm v1.0.53
-	github.com/yyle88/gormrepo v1.0.47
+	github.com/yyle88/gormrepo v1.0.48
 	github.com/yyle88/must v0.0.23
 	github.com/yyle88/neatjson v0.0.12
 	github.com/yyle88/osexistpath v0.0.17
@@ -18,10 +18,10 @@ require (
 	github.com/yyle88/rese v0.0.10
 	github.com/yyle88/runpath v1.0.23
 	github.com/yyle88/syntaxgo v0.0.50
-	github.com/yyle88/zaplog v0.0.22
+	github.com/yyle88/zaplog v0.0.23
 	go.uber.org/zap v1.27.0
 	gorm.io/driver/sqlite v1.5.7
-	gorm.io/gorm v1.26.1
+	gorm.io/gorm v1.30.0
 )
 
 require (

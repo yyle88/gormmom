@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/yyle88/gormmom/internal/simpleindex"
+	"github.com/yyle88/gormmom/internal/simpleindexname"
 	"gorm.io/gorm/schema"
 )
 
@@ -23,12 +23,12 @@ func (G *Lowercase63pattern) CheckIndexName(indexName string) bool {
 }
 
 func (G *Lowercase63pattern) BuildIndexName(schemaIndex *schema.Index, param *BuildIndexParam) *IndexNameResult {
-	result := simpleindex.BuildIndexName(schemaIndex, &simpleindex.BuildIndexParam{
+	result := simpleindexname.BuildIndexName(schemaIndex, &simpleindexname.BuildIndexParam{
 		TableName:  param.TableName,
 		FieldName:  param.FieldName,
 		ColumnName: strings.ToLower(param.ColumnName),
 	})
-	simpleindex.CheckLength(result.NewIndexName, 63)
+	simpleindexname.CheckLength(result.NewIndexName, 63)
 	return &IndexNameResult{
 		TagFieldName: result.TagFieldName,
 		NewIndexName: result.NewIndexName,

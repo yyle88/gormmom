@@ -22,7 +22,7 @@ func (G *Uppercase63pattern) CheckColumnName(columnName string) bool {
 }
 
 func (G *Uppercase63pattern) BuildColumnName(fieldName string) string {
-	columnName := simplename.BuildSimpleName(fieldName)
+	columnName := simplename.BuildColumnName(fieldName)
 	simplename.CheckLength(columnName, 63)
 	return strings.ToUpper(columnName)
 }
