@@ -6,7 +6,7 @@ import (
 )
 
 type Options struct {
-	tagName                string
+	systemTagName          string
 	columnNamingSubTagName string
 	columnNamingStrategies *gormmomname.Strategies
 	skipBasicColumnName    bool //是否跳过简单字段，有的字段虽然没有配置名称或者规则，但是它满足简单字段，就也不做任何处理
@@ -16,7 +16,7 @@ type Options struct {
 
 func NewOptions() *Options {
 	return &Options{
-		tagName:                "mom", // mother_tongue native_language. // 因为我也不太能熟练拼写更高级的单词，还不如返璞归真直接用口语表示
+		systemTagName:          "mom", // mother_tongue native_language. // 因为我也不太能熟练拼写更高级的单词，还不如返璞归真直接用口语表示
 		columnNamingSubTagName: "mcp", // m(mother_tongue) c(column_name) p(pattern) // 表示列名的样式标签
 		columnNamingStrategies: gormmomname.NewStrategies(),
 		skipBasicColumnName:    true,
@@ -26,7 +26,7 @@ func NewOptions() *Options {
 }
 
 func (opt *Options) WithTagName(tagName string) *Options {
-	opt.tagName = tagName
+	opt.systemTagName = tagName
 	return opt
 }
 

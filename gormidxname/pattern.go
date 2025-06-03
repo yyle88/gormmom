@@ -5,6 +5,13 @@ import (
 	"gorm.io/gorm/schema"
 )
 
+type IndexPatternTagEnum string
+
+const (
+	IdxPatternTagName IndexPatternTagEnum = "idx"
+	UdxPatternTagName IndexPatternTagEnum = "udx"
+)
+
 // nolint:no-doc
 // 自定义枚举类型
 type PatternEnum string
@@ -24,7 +31,7 @@ type BuildIndexParam struct {
 type IndexNameResult struct {
 	TagFieldName string
 	NewIndexName string
-	IdxUdxPrefix string
+	IdxUdxPrefix IndexPatternTagEnum
 }
 
 type Strategies struct {

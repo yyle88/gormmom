@@ -32,6 +32,6 @@ func (G *Lowercase63pattern) BuildIndexName(schemaIndex *schema.Index, param *Bu
 	return &IndexNameResult{
 		TagFieldName: result.TagFieldName,
 		NewIndexName: result.NewIndexName,
-		IdxUdxPrefix: result.IdxUdxPrefix,
+		IdxUdxPrefix: IndexPatternTagEnum(result.IdxUdxPrefix),
 	}
 }

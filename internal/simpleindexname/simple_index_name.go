@@ -10,6 +10,11 @@ import (
 	"gorm.io/gorm/schema"
 )
 
+const (
+	IdxPatternTagName = "idx"
+	UdxPatternTagName = "udx"
+)
+
 type BuildIndexParam struct {
 	TableName  string
 	FieldName  string
@@ -35,11 +40,11 @@ func BuildIndexName(schemaIndex *schema.Index, param *BuildIndexParam) *IndexNam
 	var newIndexName string
 	switch schemaIndex.Class {
 	case "":
-		enumCodeName = "idx"
+		enumCodeName = IdxPatternTagName
 		tagFieldName = "index"
 		newIndexName = mergeIndexName("idx", param.TableName, param.ColumnName)
 	case "UNIQUE":
-		enumCodeName = "udx"
+		enumCodeName = UdxPatternTagName
 		tagFieldName = "uniqueIndex"
 		newIndexName = mergeIndexName("udx", param.TableName, param.ColumnName)
 	default:

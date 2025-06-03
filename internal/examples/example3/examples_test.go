@@ -8,7 +8,7 @@ import (
 )
 
 func TestGen(t *testing.T) {
-	params := gormmom.NewSchemaXs(runpath.PARENT.Path(), []interface{}{
+	params := gormmom.NewGormStructs(runpath.PARENT.Path(), []interface{}{
 		&Example{},
 		&Example2{},
 	})

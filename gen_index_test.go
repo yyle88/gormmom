@@ -5,6 +5,10 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"github.com/yyle88/done"
+	"github.com/yyle88/gormmom/internal/utils"
+	"github.com/yyle88/neatjson/neatjsons"
+	"github.com/yyle88/rese"
+	"github.com/yyle88/rese/resb"
 	"github.com/yyle88/runpath"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -31,12 +35,10 @@ type Example3 struct {
 }
 
 func TestDryRunMigrate(t *testing.T) {
-	db := done.VCE(gorm.Open(sqlite.Open("file::memory:?cache=private"), &gorm.Config{
+	db := done.VPE(gorm.Open(sqlite.Open("file::memory:?cache=private"), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
-	})).Nice()
-	defer func() {
-		done.Done(done.VCE(db.DB()).Nice().Close())
-	}()
+	})).Full()
+	defer rese.F0(rese.P1(db.DB()).Close)
 
 	require.NoError(t, db.Session(&gorm.Session{
 		DryRun: true,
@@ -44,11 +46,15 @@ func TestDryRunMigrate(t *testing.T) {
 }
 
 func TestConfig_GenCode_GenIndexes(t *testing.T) {
-	cfg := NewConfig(NewSchemaX2[Example3](runpath.CurrentPath()), NewOptions())
+	cfg := NewConfig(NewGormStructFromStruct[Example3](runpath.CurrentPath()), NewOptions())
 	t.Log(cfg)
 
 	newCode := cfg.GetNewCode()
-	t.Log(string(newCode))
+	results := utils.ParseTagsTrimBackticks(newCode, &Example3{})
+	t.Log(neatjsons.S(results))
+	require.Equal(t, `gorm:"column:V_D359_0D54;index:idx_example3_v_d359_0d54" mom:"mcp:S63;idx:cnm;"`, resb.C1(results.Get("V姓名")))
+	require.Equal(t, `gorm:"column:V_745E_849F;unique" mom:"mcp:S63;"`, resb.C1(results.Get("V年龄")))
+	require.Equal(t, `gorm:"column:V_2760_2B52;uniqueIndex:udx_example3_v_2760_2b52" mom:"mcp:S63;udx:cnm;"`, resb.C1(results.Get("V性别")))
 }
 
 type Example4 struct {
@@ -62,10 +68,33 @@ func (*Example4) TableName() string {
 	return "example4"
 }
 
-func TestConfig_GenCode_GenIndexes_2(t *testing.T) {
-	cfg := NewConfig(NewSchemaX2[Example4](runpath.CurrentPath()), NewOptions())
+func TestConfig_GenCode_GenIndexes_Example4(t *testing.T) {
+	cfg := NewConfig(NewGormStructFromStruct[Example4](runpath.CurrentPath()), NewOptions())
 	t.Log(cfg)
 
 	newCode := cfg.GetNewCode()
-	t.Log(string(newCode))
+	results := utils.ParseTagsTrimBackticks(newCode, &Example4{})
+	t.Log(neatjsons.S(results))
+	require.Equal(t, `gorm:"column:v_c18b_f753;primaryKey" mom:"mcp:s63;"`, resb.C1(results.Get("V证号")))
+	require.Equal(t, `gorm:"column:v_d359_0d54;index:idx_example4_v_d359_0d54" mom:"mcp:s63;idx:cnm;"`, resb.C1(results.Get("V姓名")))
+	require.Equal(t, `gorm:"column:v_745e_849f;unique" mom:"mcp:s63;"`, resb.C1(results.Get("V年龄")))
+	require.Equal(t, `gorm:"column:V_2760_2B52;uniqueIndex:udx_example4_v_2760_2b52" mom:"mcp:S63;udx:cnm;"`, resb.C1(results.Get("V性别")))
+}
+
+type Example6 struct {
+	V账号   string `gorm:"primaryKey"`
+	V身份证号 string `gorm:"column:person_num;uniqueIndex" mom:"udx:cnm;"`
+	V学校编号 string `gorm:"column:school_num;index" mom:"idx:cnm;"`
+}
+
+func TestConfig_GenCode_GenIndexes_Example6(t *testing.T) {
+	cfg := NewConfig(NewGormStructFromStruct[Example6](runpath.CurrentPath()), NewOptions())
+	t.Log(cfg)
+
+	newCode := cfg.GetNewCode()
+	results := utils.ParseTagsTrimBackticks(newCode, &Example6{})
+	t.Log(neatjsons.S(results))
+	require.Equal(t, `gorm:"column:v_268d_f753;primaryKey" mom:"mcp:s63;"`, resb.C1(results.Get("V账号")))
+	require.Equal(t, `gorm:"column:person_num;uniqueIndex:udx_example6_person_num" mom:"udx:cnm;"`, resb.C1(results.Get("V身份证号")))
+	require.Equal(t, `gorm:"column:school_num;index:idx_example6_school_num" mom:"idx:cnm;"`, resb.C1(results.Get("V学校编号")))
 }

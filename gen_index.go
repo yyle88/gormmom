@@ -19,14 +19,14 @@ func (cfg *Config) validateCompositeIndex(indexName string, fields []schema.Inde
 	zaplog.LOG.Debug("validate-composite-index", zap.String("index_name", indexName), zap.Int("field_size", len(fields)))
 }
 
-func (cfg *Config) correctIndexNames(srcChanges []*defineTagModification) {
-	var mapTagModifications = make(map[string]*defineTagModification, len(srcChanges))
-	for _, rep := range srcChanges {
-		mapTagModifications[rep.structFieldName] = rep
+func (cfg *Config) correctIndexNames(modifications []*defineTagModification) {
+	var mapTagModifications = make(map[string]*defineTagModification, len(modifications))
+	for _, step := range modifications {
+		mapTagModifications[step.structFieldName] = step
 	}
 
-	schemaIndexes := cfg.schemaX.sch.ParseIndexes()
-	zaplog.LOG.Debug("check_indexes", zap.String("object_class", cfg.schemaX.sch.Name), zap.String("table_name", cfg.schemaX.sch.Table), zap.Int("index_count", len(schemaIndexes)))
+	schemaIndexes := cfg.gormStruct.gormSchema.ParseIndexes()
+	zaplog.LOG.Debug("check_indexes", zap.String("object_class", cfg.gormStruct.gormSchema.Name), zap.String("table_name", cfg.gormStruct.gormSchema.Table), zap.Int("index_count", len(schemaIndexes)))
 	for _, node := range schemaIndexes {
 		zaplog.LOG.Debug("foreach_index")
 		zaplog.LOG.Debug("check_a_index", zap.String("index_name", node.Name), zap.Int("field_size", len(node.Fields)))
@@ -44,19 +44,19 @@ func (cfg *Config) correctIndexNames(srcChanges []*defineTagModification) {
 }
 
 func (cfg *Config) rewriteSingleColumnIndex(schemaIndex *schema.Index, modification *defineTagModification) {
-	zaplog.LOG.Debug("rewrite_single_column_index", zap.String("table_name", cfg.schemaX.sch.Table), zap.String("field_name", modification.structFieldName), zap.String("index_name", schemaIndex.Name), zap.String("index_class", schemaIndex.Class))
+	zaplog.LOG.Debug("rewrite_single_column_index", zap.String("table_name", cfg.gormStruct.gormSchema.Table), zap.String("field_name", modification.structFieldName), zap.String("index_name", schemaIndex.Name), zap.String("index_class", schemaIndex.Class))
 
-	columnName := cfg.extractTagFieldGetValue(modification.modifiedTagCode, "gorm", "column")
+	columnName := cfg.extractTagFieldGetValue(modification.newTagCode, "gorm", "column")
 	must.Nice(columnName)
 	zaplog.LOG.Debug("new_column_name", zap.String("name", modification.structFieldName), zap.String("new_column_name", columnName))
 
 	//这个是规则的枚举名称
-	var patternTagName string
+	var patternTagName gormidxname.IndexPatternTagEnum
 	switch schemaIndex.Class {
 	case "":
-		patternTagName = "idx"
+		patternTagName = gormidxname.IdxPatternTagName
 	case "UNIQUE":
-		patternTagName = "udx"
+		patternTagName = gormidxname.UdxPatternTagName
 	default:
 		patternTagName = ""
 	}
@@ -74,7 +74,7 @@ func (cfg *Config) rewriteSingleColumnIndex(schemaIndex *schema.Index, modificat
 			zaplog.LOG.Debug("check_idx_match", zap.Bool("match", match))
 			if !match {
 				//当没有配置规则，而默认规则检查不正确时，就需要把规则名设置到标签里
-				modification.modifiedTagCode = syntaxgo_tag.SetTagFieldValue(modification.modifiedTagCode, cfg.options.tagName, patternTagName, string(patternEnum), syntaxgo_tag.INSERT_LOCATION_END)
+				modification.newTagCode = syntaxgo_tag.SetTagFieldValue(modification.newTagCode, cfg.options.systemTagName, string(patternTagName), string(patternEnum), syntaxgo_tag.INSERT_LOCATION_END)
 			} else {
 				//当没有配置规则，而且能够满足检查时，就不做任何事情（不要破坏用户自己配置的正确索引名）
 				return
@@ -88,7 +88,7 @@ func (cfg *Config) rewriteSingleColumnIndex(schemaIndex *schema.Index, modificat
 	pattern := cfg.options.indexNamingStrategies.GetPattern(patternEnum)
 
 	indexNameResult := must.Nice(pattern.BuildIndexName(schemaIndex, &gormidxname.BuildIndexParam{
-		TableName:  cfg.schemaX.sch.Table,
+		TableName:  cfg.gormStruct.gormSchema.Table,
 		FieldName:  modification.structFieldName,
 		ColumnName: columnName,
 	}))
@@ -98,7 +98,7 @@ func (cfg *Config) rewriteSingleColumnIndex(schemaIndex *schema.Index, modificat
 	if indexNameResult.TagFieldName == "" {
 		return
 	}
-	zaplog.LOG.Debug("compare", zap.String("which_enum_code_name", patternTagName), zap.String("enum_code_name", indexNameResult.IdxUdxPrefix))
+	zaplog.LOG.Debug("compare", zap.String("which_enum_code_name", string(patternTagName)), zap.String("enum_code_name", string(indexNameResult.IdxUdxPrefix)))
 	must.Equals(patternTagName, indexNameResult.IdxUdxPrefix)
 
 	zaplog.LOG.Debug("new_index_name", zap.String("new_index_name", indexNameResult.NewIndexName))
@@ -108,7 +108,7 @@ func (cfg *Config) rewriteSingleColumnIndex(schemaIndex *schema.Index, modificat
 
 	zaplog.LOG.Debug("tag_field_name", zap.String("tag_field_name", indexNameResult.TagFieldName))
 
-	gormTagContent, stx, etx := syntaxgo_tag.ExtractTagValueIndex(modification.modifiedTagCode, "gorm")
+	gormTagContent, stx, etx := syntaxgo_tag.ExtractTagValueIndex(modification.newTagCode, "gorm")
 	must.TRUE(stx >= 0)
 	must.TRUE(etx >= 0)
 	must.Nice(gormTagContent) //就是排除 gorm: 以后得到的双引号里面的内容
@@ -122,7 +122,7 @@ func (cfg *Config) rewriteSingleColumnIndex(schemaIndex *schema.Index, modificat
 		if sfx > 0 && efx > 0 {
 			spx := stx + sfx //把起点坐标补上前面的
 			epx := stx + efx
-			modification.modifiedTagCode = modification.modifiedTagCode[:spx] + indexNameResult.NewIndexName + modification.modifiedTagCode[epx:]
+			modification.newTagCode = modification.newTagCode[:spx] + indexNameResult.NewIndexName + modification.newTagCode[epx:]
 			changed = true
 		}
 	}
@@ -131,19 +131,19 @@ func (cfg *Config) rewriteSingleColumnIndex(schemaIndex *schema.Index, modificat
 		if sfx > 0 && efx > 0 {
 			spx := stx + sfx //把起点坐标补上前面的
 			epx := stx + efx
-			modification.modifiedTagCode = modification.modifiedTagCode[:spx] + indexNameResult.TagFieldName + ":" + indexNameResult.NewIndexName + modification.modifiedTagCode[epx:]
+			modification.newTagCode = modification.newTagCode[:spx] + indexNameResult.TagFieldName + ":" + indexNameResult.NewIndexName + modification.newTagCode[epx:]
 			changed = true
 		}
 	}
 	if !changed {
-		zaplog.LOG.Debug("not_change_tag", zap.String("not_change_tag", modification.modifiedTagCode))
+		zaplog.LOG.Debug("not_change_tag", zap.String("not_change_tag", modification.newTagCode))
 	}
 
-	zaplog.LOG.Debug("new_tag_string", zap.String("new_tag_string", modification.modifiedTagCode))
+	zaplog.LOG.Debug("new_tag_string", zap.String("new_tag_string", modification.newTagCode))
 }
 
-func (cfg *Config) resolveIndexPattern(modification *defineTagModification, patternTagName string) (gormidxname.PatternEnum, bool) {
-	var name = cfg.extractTagFieldGetValue(modification.modifiedTagCode, cfg.options.tagName, patternTagName)
+func (cfg *Config) resolveIndexPattern(modification *defineTagModification, patternTagName gormidxname.IndexPatternTagEnum) (gormidxname.PatternEnum, bool) {
+	var name = cfg.extractTagFieldGetValue(modification.newTagCode, cfg.options.systemTagName, string(patternTagName))
 	if name == "" {
 		defaultPattern := cfg.options.indexNamingStrategies.GetDefault()
 		return defaultPattern.GetPatternEnum(), false
