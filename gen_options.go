@@ -25,8 +25,8 @@ func NewOptions() *Options {
 	}
 }
 
-func (opt *Options) WithTagName(tagName string) *Options {
-	opt.systemTagName = tagName
+func (opt *Options) WithTagName(systemTagName string) *Options {
+	opt.systemTagName = systemTagName
 	return opt
 }
 

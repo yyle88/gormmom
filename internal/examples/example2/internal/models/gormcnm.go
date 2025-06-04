@@ -1,4 +1,4 @@
-package example2
+package models
 
 import (
 	"time"
@@ -6,8 +6,8 @@ import (
 	"github.com/yyle88/gormcnm"
 )
 
-func (T *Example) Columns() *exampleColumns {
-	return &exampleColumns{
+func (T *Example) Columns() *ExampleColumns {
+	return &ExampleColumns{
 		ID:        gormcnm.Cnm(T.ID, "id"),
 		V名称:       gormcnm.Cnm(T.V名称, "V_0D54_F079"),
 		V字段:       gormcnm.Cnm(T.V字段, "v_575b_b56b"),
@@ -22,7 +22,7 @@ func (T *Example) Columns() *exampleColumns {
 	}
 }
 
-type exampleColumns struct {
+type ExampleColumns struct {
 	// Embedding operation functions make it easy to use // 继承操作函数便于使用
 	gormcnm.ColumnOperationClass
 	// The column names and types of the model's columns // 模型各列的列名和类型

@@ -17,7 +17,8 @@ require (
 	github.com/yyle88/printgo v1.0.5
 	github.com/yyle88/rese v0.0.10
 	github.com/yyle88/runpath v1.0.23
-	github.com/yyle88/syntaxgo v0.0.51
+	github.com/yyle88/syntaxgo v0.0.52
+	github.com/yyle88/tern v0.0.8
 	github.com/yyle88/zaplog v0.0.23
 	go.uber.org/zap v1.27.0
 	gorm.io/driver/sqlite v1.5.7
@@ -35,7 +36,6 @@ require (
 	github.com/yyle88/mutexmap v1.0.13 // indirect
 	github.com/yyle88/sortslice v1.0.7 // indirect
 	github.com/yyle88/sure v0.0.38 // indirect
-	github.com/yyle88/tern v0.0.8 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20250210185358-939b2ce775ac // indirect
 	golang.org/x/mod v0.23.0 // indirect

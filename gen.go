@@ -1,6 +1,7 @@
 package gormmom
 
 import (
+	"bytes"
 	"fmt"
 	"go/ast"
 	"os"
@@ -22,22 +23,6 @@ import (
 	"gorm.io/gorm/schema"
 )
 
-type Configs []*Config
-
-func NewConfigs(gormStructs []*GormStruct, options *Options) Configs {
-	var configs = make([]*Config, 0, len(gormStructs))
-	for _, gormStruct := range gormStructs {
-		configs = append(configs, NewConfig(gormStruct, options))
-	}
-	return configs
-}
-
-func (configs Configs) GenReplaces() {
-	for _, config := range configs {
-		config.GenReplace()
-	}
-}
-
 type Config struct {
 	gormStruct *GormStruct
 	options    *Options
@@ -50,14 +35,22 @@ func NewConfig(gormStruct *GormStruct, options *Options) *Config {
 	}
 }
 
-func (cfg *Config) GenReplace() {
-	srcPath := must.Nice(cfg.gormStruct.sourcePath)
-	newCode := must.Have(rese.A1(formatgo.FormatBytes(cfg.GetNewCode())))
-	utils.WriteFile(srcPath, newCode)
+func (cfg *Config) GenReplace() *NewCodeResult {
+	newCode := cfg.GetNewCode()
+	srcPath := must.SameNice(cfg.gormStruct.sourcePath, newCode.SrcPath)
+	if newCode.HasChange() { // 只有当有变化时才写文件
+		srcCode := must.Have(rese.A1(formatgo.FormatBytes(newCode.NewCode)))
+		utils.WriteFile(srcPath, srcCode)
+		newCode.NewCode = srcCode
+	}
+	return newCode
 }
 
-func (cfg *Config) GetNewCode() []byte {
-	sourceCode := rese.A1(os.ReadFile(cfg.gormStruct.sourcePath))
+func (cfg *Config) GetNewCode() *NewCodeResult {
+	return cfg.makeNewCode(rese.A1(os.ReadFile(cfg.gormStruct.sourcePath)))
+}
+
+func (cfg *Config) makeNewCode(sourceCode []byte) *NewCodeResult {
 	astBundle := rese.C1(syntaxgo_ast.NewAstBundleV1(sourceCode))
 	astFile, fileSet := astBundle.GetBundle()
 	// 使用语法分析树 ast 找到结构体的代码，就像这样
@@ -82,7 +75,7 @@ func (cfg *Config) GetNewCode() []byte {
 
 		zaplog.LOG.Debug("change_index_names")
 		for _, step := range modifications {
-			zaplog.LOG.Debug("check_index:", zap.String("field_name", step.structFieldName), zap.String("new_tag_code", step.newTagCode))
+			zaplog.LOG.Debug("check_index:", zap.String("struct_filed_name", step.structFieldName), zap.String("new_tag_code", step.newTagCode))
 		}
 	}
 
@@ -91,14 +84,28 @@ func (cfg *Config) GetNewCode() []byte {
 
 	//接下来替换代码，把需要 新增 或者 替换 的标签都设置到代码里
 	newCode := sourceCode
+	changedLineCount := 0
 	for _, step := range modifications {
-		newCode = syntaxgo_astnode.ChangeNodeCode(newCode, step.tagPosNode, []byte(step.newTagCode))
+		oldTagCode := syntaxgo_astnode.GetCode(newCode, step.tagPosNode)
+		newTagCode := []byte(step.newTagCode)
+		if !bytes.Equal(oldTagCode, newTagCode) {
+			zaplog.LOG.Debug("change", zap.ByteString("old_tag_code", oldTagCode), zap.ByteString("new_tag_code", newTagCode))
+		} else {
+			continue
+		}
+		newCode = syntaxgo_astnode.ChangeNodeCode(newCode, step.tagPosNode, newTagCode)
+		changedLineCount++
 	}
-	return newCode
+	return &NewCodeResult{
+		NewCode:          newCode,
+		SrcPath:          cfg.gormStruct.sourcePath,
+		ChangedLineCount: changedLineCount,
+	}
 }
 
 type defineTagModification struct {
 	structFieldName string   //结构体的字段名
+	columnName      string   //数据表中的列名
 	tagPosNode      ast.Node //标签的起止位置-就是在src源码中的位置，便于后面的替换代码
 	newTagCode      string   //新标签的新内容-就是标签的完整全部内容
 }
@@ -144,8 +151,9 @@ func (cfg *Config) collectTagModifications(structType *ast.StructType) []*define
 					// 收集标签修改操作
 					results = append(results, &defineTagModification{
 						structFieldName: fieldName.Name,
+						columnName:      changeTag.columnName,
 						tagPosNode:      syntaxgo_astnode.NewNode(fieldItem.End(), fieldItem.End()), //在尾部插入新的标签，要紧贴字段而且在换行符前面
-						newTagCode:      changeTag,
+						newTagCode:      changeTag.newTagCode,
 					})
 				}
 			} else if patternName := cfg.extractTagGetCnmPattern(fieldItem.Tag.Value); patternName != "" {
@@ -156,14 +164,15 @@ func (cfg *Config) collectTagModifications(structType *ast.StructType) []*define
 				// 收集标签修改操作
 				results = append(results, &defineTagModification{
 					structFieldName: fieldName.Name,
+					columnName:      changeTag.columnName,
 					tagPosNode:      fieldItem.Tag, //完整替换原来的标签
-					newTagCode:      changeTag,
+					newTagCode:      changeTag.newTagCode,
 				})
 			} else {
 				if cfg.options.skipBasicColumnName && defaultPattern.CheckColumnName(schemaColumn.DBName) {
 					zaplog.LOG.Debug("SKIP SIMPLE FIELD", zap.String("struct_name", cfg.gormStruct.structName), zap.String("struct_field_name", fieldName.Name))
 					if cfg.options.renewIndexName && cfg.hasAnyIdxTagUdxTagValue(fieldItem) {
-						results = append(results, cfg.newFirstNotModification(fieldItem))
+						results = append(results, cfg.newFirstNotModification(fieldItem, schemaColumn.DBName))
 					}
 					continue
 				}
@@ -174,13 +183,14 @@ func (cfg *Config) collectTagModifications(structType *ast.StructType) []*define
 					// 收集标签修改操作
 					results = append(results, &defineTagModification{
 						structFieldName: fieldName.Name,
+						columnName:      changeTag.columnName,
 						tagPosNode:      fieldItem.Tag, //完整替换原来的标签
-						newTagCode:      changeTag,
+						newTagCode:      changeTag.newTagCode,
 					})
 				} else {
 					zaplog.LOG.Debug("match-pattern-so-skip", zap.String("name", fieldName.Name), zap.String("tag", fieldItem.Tag.Value))
 					if cfg.options.renewIndexName && cfg.hasAnyIdxTagUdxTagValue(fieldItem) {
-						results = append(results, cfg.newFirstNotModification(fieldItem))
+						results = append(results, cfg.newFirstNotModification(fieldItem, schemaColumn.DBName))
 					}
 					continue
 				}
@@ -190,7 +200,13 @@ func (cfg *Config) collectTagModifications(structType *ast.StructType) []*define
 
 	zaplog.LOG.Debug("change_column_names")
 	for _, rep := range results {
-		zaplog.LOG.Debug("check_column:", zap.String("field_name", rep.structFieldName), zap.String("new_tag_code", rep.newTagCode))
+		zaplog.LOG.Debug("check_column:", zap.String("field_name", rep.structFieldName), zap.String("new_column_name", rep.columnName), zap.String("new_tag_code", rep.newTagCode))
+
+		must.Nice(rep.structFieldName)
+		must.Nice(rep.columnName)
+		must.Nice(rep.newTagCode)
+		must.Nice(rep.tagPosNode.Pos())
+		must.Nice(rep.tagPosNode.End())
 	}
 	return results
 }
@@ -199,25 +215,39 @@ func (cfg *Config) hasAnyIdxTagUdxTagValue(fieldItem *ast.Field) bool {
 	if len(fieldItem.Names) != 1 {
 		return false
 	}
+	if fieldItem.Tag == nil {
+		return false
+	}
 	for _, patternTagEnum := range []gormidxname.IndexPatternTagEnum{
 		gormidxname.IdxPatternTagName,
 		gormidxname.UdxPatternTagName,
 	} {
 		var name = cfg.extractTagFieldGetValue(fieldItem.Tag.Value, cfg.options.systemTagName, string(patternTagEnum))
 		if name != "" {
+			zaplog.LOG.Debug("match-pattern-so-has-any-tag", zap.String("pattern", string(patternTagEnum)), zap.String("name", name))
 			return true
 		}
 	}
 	return false
 }
 
-func (cfg *Config) newFirstNotModification(fieldItem *ast.Field) *defineTagModification {
+func (cfg *Config) hasOneIdxTagUdxTagValue(tagCode string, patternTagEnum gormidxname.IndexPatternTagEnum) bool {
+	var name = cfg.extractTagFieldGetValue(tagCode, cfg.options.systemTagName, string(patternTagEnum))
+	if name != "" {
+		zaplog.LOG.Debug("match-pattern-so-has-one-tag", zap.String("pattern", string(patternTagEnum)), zap.String("name", name))
+		return true
+	}
+	return false
+}
+
+func (cfg *Config) newFirstNotModification(fieldItem *ast.Field, columnName string) *defineTagModification {
 	must.Full(fieldItem)
 	must.Length(fieldItem.Names, 1)
 	must.Nice(fieldItem.Names[0].Name)
 
 	return &defineTagModification{
 		structFieldName: fieldItem.Names[0].Name,
+		columnName:      columnName,
 		tagPosNode:      fieldItem.Tag,
 		newTagCode:      fieldItem.Tag.Value,
 	}
@@ -239,21 +269,27 @@ func (cfg *Config) extractTagFieldGetValue(tagCode string, key1 string, key2 str
 	return tagField
 }
 
-func (cfg *Config) modifyFieldTagCorrection(schemaField *schema.Field, tag string, patternType gormmomname.PatternEnum) string {
+type correctionNewTag struct {
+	columnName string
+	newTagCode string
+}
+
+func (cfg *Config) modifyFieldTagCorrection(schemaField *schema.Field, tag string, patternType gormmomname.PatternEnum) *correctionNewTag {
 	zaplog.LOG.Debug("new_fix_tag_code", zap.String("name", schemaField.Name), zap.String("tag", tag))
 	//在 gorm 里修改 column 内容
 	newTag := cfg.modifyGormTagWithColumn(schemaField, tag, patternType)
 	//在 规则 里修改 column-name-pattern 内容
-	newTag = cfg.modifyPatternTagWithName(newTag, patternType)
+	newTag.newTagCode = cfg.modifyPatternTagWithName(newTag.newTagCode, patternType)
 	//这是替换后的结果，即替换整个标签内容，获得新的完整标签内容
-	zaplog.LOG.Debug("new_fix_tag_code", zap.String("name", schemaField.Name), zap.String("new_tag", newTag))
+	zaplog.LOG.Debug("new_fix_tag_code", zap.String("name", schemaField.Name), zap.String("column_name", newTag.columnName), zap.String("new_tag_code", newTag.newTagCode))
 	return newTag
 }
 
-func (cfg *Config) modifyGormTagWithColumn(schemaField *schema.Field, tag string, patternType gormmomname.PatternEnum) string {
+func (cfg *Config) modifyGormTagWithColumn(schemaField *schema.Field, tag string, patternType gormmomname.PatternEnum) *correctionNewTag {
 	pattern := cfg.options.columnNamingStrategies.GetPattern(patternType)
 	columnName := pattern.BuildColumnName(schemaField.Name)
 	zaplog.LOG.Debug("new_fix_gorm_tag", zap.String("name", schemaField.Name), zap.String("column_name", columnName))
+	must.Nice(columnName)
 
 	tagValue, sdx, edx := syntaxgo_tag.ExtractTagValueIndex(tag, "gorm")
 	if sdx < 0 || edx < 0 { //表示没找到 gorm 相关的内容
@@ -265,10 +301,16 @@ func (cfg *Config) modifyGormTagWithColumn(schemaField *schema.Field, tag string
 			part += " " //说明后面还有别的标签
 		}
 		p := 1 //插在第一个"`"的后面，即第一位的位置
-		return tag[:p] + part + tag[p:]
+		return &correctionNewTag{
+			columnName: columnName,
+			newTagCode: tag[:p] + part + tag[p:],
+		}
 	}
 	//设置这个标签的这个字段的值
-	return syntaxgo_tag.SetTagFieldValue(tag, "gorm", "column", columnName, syntaxgo_tag.INSERT_LOCATION_TOP)
+	return &correctionNewTag{
+		columnName: columnName,
+		newTagCode: syntaxgo_tag.SetTagFieldValue(tag, "gorm", "column", columnName, syntaxgo_tag.INSERT_LOCATION_TOP),
+	}
 }
 
 func (cfg *Config) modifyPatternTagWithName(tag string, patternType gormmomname.PatternEnum) string {

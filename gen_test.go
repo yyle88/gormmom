@@ -36,7 +36,12 @@ func TestGetNewCode(t *testing.T) {
 	t.Log(cfg)
 
 	newCode := cfg.GetNewCode()
-	results := utils.ParseTagsTrimBackticks(newCode, &Example{})
+	t.Log(newCode.SrcPath)
+	t.Log(newCode.ChangedLineCount)
+
+	require.Equal(t, 7, newCode.ChangedLineCount)
+
+	results := utils.ParseTagsTrimBackticks(newCode.NewCode, &Example{})
 	t.Log(neatjsons.S(results))
 	require.Equal(t, `gorm:"column:v_0d54_f079;type:text" mom:"mcp:s63;"`, resb.C1(results.Get("V名称")))
 	require.Equal(t, `gorm:"column:V_575B_B56B;" mom:"mcp:S63;"`, resb.C1(results.Get("V字段")))
@@ -49,7 +54,12 @@ func TestGetNewCode_S63(t *testing.T) {
 	t.Log(cfg)
 
 	newCode := cfg.GetNewCode()
-	results := utils.ParseTagsTrimBackticks(newCode, &Example{})
+	t.Log(newCode.SrcPath)
+	t.Log(newCode.ChangedLineCount)
+
+	require.Equal(t, 7, newCode.ChangedLineCount)
+
+	results := utils.ParseTagsTrimBackticks(newCode.NewCode, &Example{})
 	t.Log(neatjsons.S(results))
 	require.Equal(t, `gorm:"column:V_575B_B56B;" mom:"mcp:S63;"`, resb.C1(results.Get("V字段")))
 }
@@ -63,9 +73,12 @@ func TestGetNewCode_Example5(t *testing.T) {
 	t.Log(cfg)
 
 	newCode := cfg.GetNewCode()
-	t.Log(string(newCode))
+	t.Log(newCode.SrcPath)
+	t.Log(newCode.ChangedLineCount)
 
-	results := utils.ParseTagsTrimBackticks(newCode, &Example5{})
+	require.Equal(t, 1, newCode.ChangedLineCount)
+
+	results := utils.ParseTagsTrimBackticks(newCode.NewCode, &Example5{})
 	t.Log(neatjsons.S(results))
 	require.Equal(t, `gorm:"column:v_3f56_c854;type:text" mom:"mcp:s30;"`, resb.C1(results.Get("V嘿哈")))
 }

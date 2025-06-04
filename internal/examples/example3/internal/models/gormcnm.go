@@ -1,9 +1,10 @@
-package example3
+package models
 
 import (
 	"time"
 
 	"github.com/yyle88/gormcnm"
+	"gorm.io/gorm"
 )
 
 func (T *Example) Columns() *ExampleColumns {
@@ -70,4 +71,35 @@ type Example2Columns struct {
 	V体重       gormcnm.ColumnName[int32]
 	CreatedAt gormcnm.ColumnName[time.Time]
 	UpdatedAt gormcnm.ColumnName[time.Time]
+}
+
+func (T *Example3) Columns() *Example3Columns {
+	return &Example3Columns{
+		ID:        gormcnm.Cnm(T.ID, "id"),
+		CreatedAt: gormcnm.Cnm(T.CreatedAt, "created_at"),
+		UpdatedAt: gormcnm.Cnm(T.UpdatedAt, "updated_at"),
+		DeletedAt: gormcnm.Cnm(T.DeletedAt, "deleted_at"),
+		U账号:       gormcnm.Cnm(T.U账号, "username"),
+		N昵称:       gormcnm.Cnm(T.N昵称, "nickname"),
+		V分数:       gormcnm.Cnm(T.V分数, "score"),
+		Age:       gormcnm.Cnm(T.Age, "age"),
+		Uuid:      gormcnm.Cnm(T.Uuid, "uuid"),
+		Rank:      gormcnm.Cnm(T.Rank, "rank"),
+	}
+}
+
+type Example3Columns struct {
+	// Embedding operation functions make it easy to use // 继承操作函数便于使用
+	gormcnm.ColumnOperationClass
+	// The column names and types of the model's columns // 模型各列的列名和类型
+	ID        gormcnm.ColumnName[uint]
+	CreatedAt gormcnm.ColumnName[time.Time]
+	UpdatedAt gormcnm.ColumnName[time.Time]
+	DeletedAt gormcnm.ColumnName[gorm.DeletedAt]
+	U账号       gormcnm.ColumnName[string]
+	N昵称       gormcnm.ColumnName[string]
+	V分数       gormcnm.ColumnName[uint64]
+	Age       gormcnm.ColumnName[int]
+	Uuid      gormcnm.ColumnName[int]
+	Rank      gormcnm.ColumnName[int]
 }

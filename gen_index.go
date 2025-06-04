@@ -1,6 +1,7 @@
 package gormmom
 
 import (
+	"fmt"
 	"unicode/utf8"
 
 	"github.com/yyle88/gormmom/gormidxname"
@@ -27,8 +28,8 @@ func (cfg *Config) correctIndexNames(modifications []*defineTagModification) {
 
 	schemaIndexes := cfg.gormStruct.gormSchema.ParseIndexes()
 	zaplog.LOG.Debug("check_indexes", zap.String("object_class", cfg.gormStruct.gormSchema.Name), zap.String("table_name", cfg.gormStruct.gormSchema.Table), zap.Int("index_count", len(schemaIndexes)))
-	for _, node := range schemaIndexes {
-		zaplog.LOG.Debug("foreach_index")
+	for idx, node := range schemaIndexes {
+		zaplog.LOG.Debug("foreach_index", zap.String("index_desc", fmt.Sprintf("(%d/%d)", idx, len(schemaIndexes))))
 		zaplog.LOG.Debug("check_a_index", zap.String("index_name", node.Name), zap.Int("field_size", len(node.Fields)))
 		if len(node.Fields) == 1 { //只检查单列索引，因为复合索引就得手写名称，因此没有问题
 			rep, ok := mapTagModifications[node.Fields[0].Name]
@@ -46,8 +47,7 @@ func (cfg *Config) correctIndexNames(modifications []*defineTagModification) {
 func (cfg *Config) rewriteSingleColumnIndex(schemaIndex *schema.Index, modification *defineTagModification) {
 	zaplog.LOG.Debug("rewrite_single_column_index", zap.String("table_name", cfg.gormStruct.gormSchema.Table), zap.String("field_name", modification.structFieldName), zap.String("index_name", schemaIndex.Name), zap.String("index_class", schemaIndex.Class))
 
-	columnName := cfg.extractTagFieldGetValue(modification.newTagCode, "gorm", "column")
-	must.Nice(columnName)
+	columnName := must.Nice(modification.columnName)
 	zaplog.LOG.Debug("new_column_name", zap.String("name", modification.structFieldName), zap.String("new_column_name", columnName))
 
 	//这个是规则的枚举名称
@@ -101,8 +101,8 @@ func (cfg *Config) rewriteSingleColumnIndex(schemaIndex *schema.Index, modificat
 	zaplog.LOG.Debug("compare", zap.String("which_enum_code_name", string(patternTagName)), zap.String("enum_code_name", string(indexNameResult.IdxUdxPrefix)))
 	must.Equals(patternTagName, indexNameResult.IdxUdxPrefix)
 
-	zaplog.LOG.Debug("new_index_name", zap.String("new_index_name", indexNameResult.NewIndexName))
-	if indexNameResult.NewIndexName == schemaIndex.Name {
+	zaplog.LOG.Debug("new_index_name", zap.String("new_index_name", indexNameResult.NewIndexName), zap.String("old_index_name", schemaIndex.Name))
+	if indexNameResult.NewIndexName == schemaIndex.Name && !cfg.hasOneIdxTagUdxTagValue(modification.newTagCode, patternTagName) {
 		return
 	}
 
@@ -117,6 +117,7 @@ func (cfg *Config) rewriteSingleColumnIndex(schemaIndex *schema.Index, modificat
 	var changed = false
 	//假如连 UTF-8 编码 都不满足，就说明这个索引名是完全错误的
 	if utf8.ValidString(schemaIndex.Name) {
+		zaplog.LOG.Debug("schema_index_name", zap.String("tag_field_name", indexNameResult.TagFieldName), zap.String("name", schemaIndex.Name))
 		//因为这个正则不能匹配非 UTF-8 编码，在前面先判断编码是否正确，编码正确以后再匹配索引名
 		sfx, efx := syntaxgo_tag.ExtractFieldEqualsValueIndex(gormTagContent, indexNameResult.TagFieldName, schemaIndex.Name)
 		if sfx > 0 && efx > 0 {
@@ -125,15 +126,18 @@ func (cfg *Config) rewriteSingleColumnIndex(schemaIndex *schema.Index, modificat
 			modification.newTagCode = modification.newTagCode[:spx] + indexNameResult.NewIndexName + modification.newTagCode[epx:]
 			changed = true
 		}
+		zaplog.LOG.Debug("check_tag_index", zap.Int("sfx", sfx), zap.Int("efx", efx), zap.Bool("changed", changed))
 	}
 	if !changed {
+		zaplog.LOG.Debug("schema_index_name", zap.String("tag_field_name", indexNameResult.TagFieldName), zap.String("name", schemaIndex.Name))
 		sfx, efx := syntaxgo_tag.ExtractNoValueFieldNameIndex(gormTagContent, indexNameResult.TagFieldName)
-		if sfx > 0 && efx > 0 {
+		if sfx >= 0 && efx >= 0 {
 			spx := stx + sfx //把起点坐标补上前面的
 			epx := stx + efx
 			modification.newTagCode = modification.newTagCode[:spx] + indexNameResult.TagFieldName + ":" + indexNameResult.NewIndexName + modification.newTagCode[epx:]
 			changed = true
 		}
+		zaplog.LOG.Debug("check_tag_index", zap.Int("sfx", sfx), zap.Int("efx", efx), zap.Bool("changed", changed))
 	}
 	if !changed {
 		zaplog.LOG.Debug("not_change_tag", zap.String("not_change_tag", modification.newTagCode))
