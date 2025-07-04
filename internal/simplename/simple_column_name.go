@@ -5,8 +5,6 @@ import (
 
 	"github.com/yyle88/gormmom/internal/unicodehex"
 	"github.com/yyle88/printgo"
-	"github.com/yyle88/zaplog"
-	"go.uber.org/zap"
 )
 
 // 这是个简单的替换逻辑，能把特殊符号转换为相应的字母（这允许在自定义标签里包含特殊符号）
@@ -73,10 +71,4 @@ func BuildColumnName(fieldName string) string {
 		}
 	}
 	return pts.String()
-}
-
-func CheckLength(name string, maxLength int) {
-	if len(name) > maxLength {
-		zaplog.LOG.Panic("COLUMN-NAME-IS-TOO-LONG", zap.String("column_name", name), zap.Int("column_name_length", len(name)), zap.Int("max_length", maxLength))
-	}
 }

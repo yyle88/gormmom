@@ -1,9 +1,9 @@
 package simpleindexname
 
 import (
-	"regexp"
 	"strings"
 
+	"github.com/yyle88/gormmom/internal/utils"
 	"github.com/yyle88/must"
 	"github.com/yyle88/zaplog"
 	"go.uber.org/zap"
@@ -54,7 +54,7 @@ func BuildIndexName(schemaIndex *schema.Index, param *BuildIndexParam) *IndexNam
 			zaplog.LOG.Warn("new_index_name", zap.String("new_index_name", newIndexName))
 		}
 
-		if !regexp.MustCompile(`^[a-zA-Z0-9_]{1,63}$`).MatchString(schemaIndex.Name) {
+		if !utils.NewCommonRegexp(63).MatchString(schemaIndex.Name) {
 			zaplog.LOG.Warn("idx_not_match", zap.String("old_index_name", schemaIndex.Name))
 		}
 
@@ -75,10 +75,4 @@ func BuildIndexName(schemaIndex *schema.Index, param *BuildIndexParam) *IndexNam
 
 func mergeIndexName(prefix string, tableName string, suffix string) string {
 	return strings.ReplaceAll(strings.Join([]string{prefix, tableName, suffix}, "_"), ".", "_")
-}
-
-func CheckLength(name string, maxLength int) {
-	if len(name) > maxLength {
-		zaplog.LOG.Panic("INDEX-NAME-IS-TOO-LONG", zap.String("index_name", name), zap.Int("index_name_length", len(name)), zap.Int("max_length", maxLength))
-	}
 }

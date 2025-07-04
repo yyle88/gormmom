@@ -1,10 +1,10 @@
 package gormmomname
 
 import (
-	"regexp"
 	"strings"
 
 	"github.com/yyle88/gormmom/internal/simplename"
+	"github.com/yyle88/gormmom/internal/utils"
 )
 
 type Lowercase63pattern struct{}
@@ -18,11 +18,11 @@ func (G *Lowercase63pattern) GetPatternEnum() PatternEnum {
 }
 
 func (G *Lowercase63pattern) CheckColumnName(columnName string) bool {
-	return regexp.MustCompile(`^[a-zA-Z0-9_]{1,63}$`).MatchString(columnName)
+	return utils.NewCommonRegexp(63).MatchString(columnName)
 }
 
 func (G *Lowercase63pattern) BuildColumnName(fieldName string) string {
-	columnName := simplename.BuildColumnName(fieldName)
-	simplename.CheckLength(columnName, 63)
-	return strings.ToLower(columnName)
+	columnName := strings.ToLower(simplename.BuildColumnName(fieldName))
+	utils.MustMatchRegexp(utils.NewCommonRegexp(63), columnName)
+	return columnName
 }

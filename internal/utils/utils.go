@@ -4,6 +4,8 @@ import (
 	"go/ast"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -96,4 +98,17 @@ func ParseTagsTrimBackticks[T any](sourceCode []byte, structObject *T) *linkedha
 		results.Put(key, TrimBackticks(value))
 	})
 	return results
+}
+
+// NewCommonRegexp 创建一个正则表达式，检查列名的长度和字符
+// 当列名前带个前导空格 比如 `gorm:"column: name;"` 时，在gorm中也是可以用的，但该规则里不允许这种情况，避免出现其它问题
+func NewCommonRegexp(maxLen int) *regexp.Regexp {
+	return regexp.MustCompile(`^[a-zA-Z0-9_]{1,` + strconv.Itoa(maxLen) + `}$`)
+}
+
+// MustMatchRegexp 检查字符串是否匹配正则表达式，如果不匹配则抛出 panic
+func MustMatchRegexp(regexpRegexp *regexp.Regexp, value string) {
+	if !regexpRegexp.MatchString(value) {
+		zaplog.LOG.Panic("regexp does not match", zap.String("regexp", regexpRegexp.String()), zap.String("value", value))
+	}
 }

@@ -4,6 +4,13 @@ import (
 	"github.com/yyle88/must"
 )
 
+//type CaseMode string
+//
+//const (
+//	Lowercase CaseMode = "LOWERCASE"
+//	Uppercase CaseMode = "UPPERCASE"
+//)
+
 // nolint:no-doc
 // 自定义枚举类型，表示使用何种字段验证方式来验证，由于不同的DB的列名规则是不同的，因此通常建议是取各种DB的交集
 type PatternEnum string

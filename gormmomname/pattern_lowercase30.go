@@ -1,10 +1,10 @@
 package gormmomname
 
 import (
-	"regexp"
 	"strings"
 
 	"github.com/yyle88/gormmom/internal/simplename"
+	"github.com/yyle88/gormmom/internal/utils"
 )
 
 type Lowercase30pattern struct{}
@@ -18,12 +18,11 @@ func (G *Lowercase30pattern) GetPatternEnum() PatternEnum {
 }
 
 func (G *Lowercase30pattern) CheckColumnName(columnName string) bool {
-	//当列名前带个前导空格 `gorm:"column: name;"` 时，在gorm中也是可以用的，但有可能存在问题，因此该规则里不允许这种情况
-	return regexp.MustCompile(`^[a-zA-Z0-9_]{1,30}$`).MatchString(columnName)
+	return utils.NewCommonRegexp(30).MatchString(columnName)
 }
 
 func (G *Lowercase30pattern) BuildColumnName(fieldName string) string {
-	columnName := simplename.BuildColumnName(fieldName)
-	simplename.CheckLength(columnName, 30)
-	return strings.ToLower(columnName)
+	columnName := strings.ToLower(simplename.BuildColumnName(fieldName))
+	utils.MustMatchRegexp(utils.NewCommonRegexp(30), columnName)
+	return columnName
 }

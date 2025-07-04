@@ -6,19 +6,19 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestName_CheckColumnName(t *testing.T) {
+func TestLowercase63pattern_CheckColumnName(t *testing.T) {
 	pattern := NewLowercase63pattern()
 
 	require.True(t, pattern.CheckColumnName("abc"))
 }
 
-func TestName_CheckColumnName_2(t *testing.T) {
+func TestUppercase63pattern_CheckColumnName(t *testing.T) {
 	pattern := NewUppercase63pattern()
 
 	require.True(t, pattern.CheckColumnName("ABC"))
 }
 
-func TestName_BuildColumnName(t *testing.T) {
+func TestLowercase30pattern_BuildColumnName(t *testing.T) {
 	pattern := NewLowercase30pattern()
 
 	t.Log(pattern.BuildColumnName("v杨亦乐"))
@@ -26,7 +26,7 @@ func TestName_BuildColumnName(t *testing.T) {
 	t.Log(pattern.BuildColumnName("v古天乐"))
 }
 
-func TestName_BuildColumnName_2(t *testing.T) {
+func TestUppercase63pattern_BuildColumnName(t *testing.T) {
 	pattern := NewUppercase63pattern()
 
 	t.Log(pattern.BuildColumnName("v杨亦乐"))
