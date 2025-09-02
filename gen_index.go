@@ -12,14 +12,31 @@ import (
 	"gorm.io/gorm/schema"
 )
 
+// validateSingleColumnIndex validates single column index naming compliance
+// Logs debug information with single column index validation process
+//
+// validateSingleColumnIndex 验证单列索引命名的符合性
+// 为单列索引验证过程记录调试信息
 func (cfg *Config) validateSingleColumnIndex(indexName string, fieldName string) {
 	zaplog.LOG.Debug("validate-single-column-index", zap.String("index_name", indexName), zap.String("field_name", fieldName))
 }
 
+// validateCompositeIndex validates composite index naming compliance
+// Logs debug information with composite index validation and field count
+//
+// validateCompositeIndex 验证复合索引命名的符合性
+// 为复合索引验证记录调试信息和字段数量
 func (cfg *Config) validateCompositeIndex(indexName string, fields []schema.IndexOption) {
 	zaplog.LOG.Debug("validate-composite-index", zap.String("index_name", indexName), zap.Int("field_size", len(fields)))
 }
 
+// correctIndexNames processes and corrects index names based on tag modifications
+// Analyzes GORM schema indexes and applies naming corrections for single column indexes
+// Validates composite indexes and ensures consistent naming patterns across the schema
+//
+// correctIndexNames 基于标签修改处理和纠正索引名
+// 分析 GORM 模式索引并对单列索引应用命名纠正
+// 验证复合索引并确保整个模式中的一致命名模式
 func (cfg *Config) correctIndexNames(modifications []*defineTagModification) {
 	var mapTagModifications = make(map[string]*defineTagModification, len(modifications))
 	for _, step := range modifications {
@@ -44,6 +61,13 @@ func (cfg *Config) correctIndexNames(modifications []*defineTagModification) {
 	}
 }
 
+// rewriteSingleColumnIndex rewrites single column index with pattern-based naming
+// Generates new index names using configured naming strategies and pattern validation
+// Updates GORM tags with appropriate index names and pattern specifications
+//
+// rewriteSingleColumnIndex 使用基于模式的命名重写单列索引
+// 使用配置的命名策略和模式验证生成新的索引名
+// 使用适当的索引名和模式规范更新 GORM 标签
 func (cfg *Config) rewriteSingleColumnIndex(schemaIndex *schema.Index, modification *defineTagModification) {
 	zaplog.LOG.Debug("rewrite_single_column_index", zap.String("table_name", cfg.gormStruct.gormSchema.Table), zap.String("field_name", modification.structFieldName), zap.String("index_name", schemaIndex.Name), zap.String("index_class", schemaIndex.Class))
 
@@ -146,6 +170,13 @@ func (cfg *Config) rewriteSingleColumnIndex(schemaIndex *schema.Index, modificat
 	zaplog.LOG.Debug("new_tag_string", zap.String("new_tag_string", modification.newTagCode))
 }
 
+// resolveIndexPattern resolves index pattern from tag configuration
+// Extracts pattern enum from system tag or returns default pattern if not found
+// Returns the resolved pattern enum and existence flag for pattern validation
+//
+// resolveIndexPattern 从标签配置中解析索引模式
+// 从系统标签中提取模式枚举，如果找不到则返回默认模式
+// 返回解析的模式枚举和用于模式验证的存在标志
 func (cfg *Config) resolveIndexPattern(modification *defineTagModification, patternTagName gormidxname.IndexPatternTagEnum) (gormidxname.PatternEnum, bool) {
 	var name = cfg.extractTagFieldGetValue(modification.newTagCode, cfg.options.systemTagName, string(patternTagName))
 	if name == "" {

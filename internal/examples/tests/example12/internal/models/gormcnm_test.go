@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/yyle88/gormcngen"
 	"github.com/yyle88/gormmom"
+	"github.com/yyle88/gormmom/gormmomname"
 	"github.com/yyle88/osexistpath/osmustexist"
 	"github.com/yyle88/runpath"
 	"github.com/yyle88/runpath/runtestpath"
@@ -13,13 +14,13 @@ import (
 
 func TestGen(t *testing.T) {
 	objects := []interface{}{
-		&T用户{},
+		&Example{},
 	}
 
 	require.True(t, t.Run("GenGormMom", func(t *testing.T) {
 		params := gormmom.NewGormStructs(runpath.PARENT.Path(), objects)
 
-		cfg := gormmom.NewConfigs(params, gormmom.NewOptions())
+		cfg := gormmom.NewConfigs(params, gormmom.NewOptions().WithDefaultColumnPattern(gormmomname.NewUppercase63pattern()))
 		t.Log(cfg)
 
 		result := cfg.GenReplaces()
@@ -33,7 +34,7 @@ func TestGen(t *testing.T) {
 		t.Log(absPath)
 
 		options := gormcngen.NewOptions().
-			WithColumnClassExportable(true). //中间类型名称的样式为导出的 T学生Columns
+			WithColumnClassExportable(true). //中间类型名称的样式为导出的 ExampleColumns
 			WithColumnsMethodRecvName("T").
 			WithColumnsCheckFieldType(true)
 

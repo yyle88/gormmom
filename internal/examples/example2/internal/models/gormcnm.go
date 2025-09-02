@@ -1,40 +1,30 @@
 package models
 
-import (
-	"time"
+import "github.com/yyle88/gormcnm"
 
-	"github.com/yyle88/gormcnm"
-)
+// 这个文件将被 gormcngen 自动生成和更新
 
-func (T *Example) Columns() *ExampleColumns {
-	return &ExampleColumns{
-		ID:        gormcnm.Cnm(T.ID, "id"),
-		V名称:       gormcnm.Cnm(T.V名称, "V_0D54_F079"),
-		V字段:       gormcnm.Cnm(T.V字段, "v_575b_b56b"),
-		V性别:       gormcnm.Cnm(T.V性别, "v_2760_2b52"),
-		V特殊:       gormcnm.Cnm(T.V特殊, "V_7972_8A6B"),
-		V年龄:       gormcnm.Cnm(T.V年龄, "v_745e_849f"),
-		Rank:      gormcnm.Cnm(T.Rank, "rank"),
-		V身高:       gormcnm.Cnm(T.V身高, "V_AB8E_D89A"),
-		V体重:       gormcnm.Cnm(T.V体重, "v_534f_cd91"),
-		CreatedAt: gormcnm.Cnm(T.CreatedAt, "created_at"),
-		UpdatedAt: gormcnm.Cnm(T.UpdatedAt, "updated_at"),
+func (T *Tユーザー) Columns() *TユーザーColumns {
+	return &TユーザーColumns{
+		ID:     gormcnm.Cnm(T.ID, "id"),
+		Uユーザー名: gormcnm.Cnm(T.Uユーザー名, "u_e630_fc30_b630_fc30_0d54"),
+		Eメール:   gormcnm.Cnm(T.Eメール, "e_e130_fc30_eb30"),
+		A年齢:    gormcnm.Cnm(T.A年齢, "a_745e_629f"),
+		D電話:    gormcnm.Cnm(T.D電話, "d_fb96_718a"),
+		J住所:    gormcnm.Cnm(T.J住所, "j_4f4f_4062"),
+		Sステータス: gormcnm.Cnm(T.Sステータス, "s_b930_c630_fc30_bf30_b930"),
 	}
 }
 
-type ExampleColumns struct {
+type TユーザーColumns struct {
 	// Embedding operation functions make it easy to use // 继承操作函数便于使用
 	gormcnm.ColumnOperationClass
 	// The column names and types of the model's columns // 模型各列的列名和类型
-	ID        gormcnm.ColumnName[int32]
-	V名称       gormcnm.ColumnName[string]
-	V字段       gormcnm.ColumnName[string]
-	V性别       gormcnm.ColumnName[string]
-	V特殊       gormcnm.ColumnName[string]
-	V年龄       gormcnm.ColumnName[int]
-	Rank      gormcnm.ColumnName[int32]
-	V身高       gormcnm.ColumnName[int32]
-	V体重       gormcnm.ColumnName[int32]
-	CreatedAt gormcnm.ColumnName[time.Time]
-	UpdatedAt gormcnm.ColumnName[time.Time]
+	ID     gormcnm.ColumnName[uint]
+	Uユーザー名 gormcnm.ColumnName[string]
+	Eメール   gormcnm.ColumnName[string]
+	A年齢    gormcnm.ColumnName[int]
+	D電話    gormcnm.ColumnName[string]
+	J住所    gormcnm.ColumnName[string]
+	Sステータス gormcnm.ColumnName[string]
 }

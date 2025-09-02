@@ -1,8 +1,10 @@
 package gormmom
 
 import (
+	"fmt"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"github.com/yyle88/done"
 	"github.com/yyle88/gormmom/internal/utils"
@@ -35,7 +37,8 @@ type Example3 struct {
 }
 
 func TestDryRunMigrate(t *testing.T) {
-	db := done.VPE(gorm.Open(sqlite.Open("file::memory:?cache=private"), &gorm.Config{
+	dsn := fmt.Sprintf("file:db-%s?mode=memory&cache=shared", uuid.New().String())
+	db := done.VPE(gorm.Open(sqlite.Open(dsn), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
 	})).Full()
 	defer rese.F0(rese.P1(db.DB()).Close)

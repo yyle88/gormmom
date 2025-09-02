@@ -1,3 +1,12 @@
+// Package gormmom: Native language programming engine that breaks down language barriers in database development
+// As the smart tag generation engine of the GORM ecosystem, it empowers teams worldwide to write database models
+// in native languages while auto generating database-compatible GORM tags and column names
+// Supports Unicode-compatible field names in Chinese, Japanese, Korean, and additional languages
+//
+// gormmom: 原生语言编程引擎，打破数据库开发中的语言壁垒
+// 作为 GORM 生态系统的智能标签生成引擎，它赋能全球团队使用原生语言编写数据库模型
+// 同时自动生成数据库兼容的 GORM 标签和列名
+// 支持 Unicode 兼容的中文、日语、韩语和其他语言字段名
 package gormmom
 
 import (
@@ -11,7 +20,6 @@ import (
 	"github.com/yyle88/formatgo"
 	"github.com/yyle88/gormmom/gormidxname"
 	"github.com/yyle88/gormmom/gormmomname"
-	"github.com/yyle88/gormmom/internal/utils"
 	"github.com/yyle88/must"
 	"github.com/yyle88/rese"
 	"github.com/yyle88/syntaxgo/syntaxgo_ast"
@@ -23,11 +31,25 @@ import (
 	"gorm.io/gorm/schema"
 )
 
+// Config represents the configuration for GORM tag generation operations
+// Contains the target struct information and generation options with customizing output
+// Provides smart mapping and deterministic generation of database-compatible tags
+//
+// Config 代表 GORM 标签生成操作的配置
+// 包含目标结构体信息和生成选项，用于自定义输出
+// 提供智能映射和确定性的数据库兼容标签生成
 type Config struct {
-	gormStruct *GormStruct
-	options    *Options
+	gormStruct *GormStruct // Target GORM struct to process // 要处理的目标 GORM 结构体
+	options    *Options    // Generation options and settings // 生成选项和设置
 }
 
+// NewConfig creates a new configuration instance with GORM tag generation
+// Takes the target struct and generation options, returns configured instance
+// Used to initialize the generation workflow with custom settings
+//
+// NewConfig 创建新的 GORM 标签生成配置实例
+// 接收目标结构体和生成选项，返回配置好的实例
+// 用于使用自定义设置初始化生成工作流程
 func NewConfig(gormStruct *GormStruct, options *Options) *Config {
 	return &Config{
 		gormStruct: gormStruct,
@@ -35,17 +57,33 @@ func NewConfig(gormStruct *GormStruct, options *Options) *Config {
 	}
 }
 
+// GenReplace generates new GORM tags and replaces the original source file
+// Processes the struct definition to add database-compatible tags and column names
+// Formats the generated code and writes back to the source file when changes detected
+// Returns the result containing the new code and change status
+//
+// GenReplace 生成新的 GORM 标签并替换原始源文件
+// 处理结构体定义以添加数据库兼容的标签和列名
+// 检测到变化时自动格式化生成的代码并写回源文件
+// 返回包含新代码和变化状态的结果
 func (cfg *Config) GenReplace() *NewCodeResult {
 	newCode := cfg.GetNewCode()
 	srcPath := must.SameNice(cfg.gormStruct.sourcePath, newCode.SrcPath)
 	if newCode.HasChange() { // 只有当有变化时才写文件
 		srcCode := must.Have(rese.A1(formatgo.FormatBytes(newCode.NewCode)))
-		utils.WriteFile(srcPath, srcCode)
+		must.Done(os.WriteFile(srcPath, srcCode, 0644))
 		newCode.NewCode = srcCode
 	}
 	return newCode
 }
 
+// GetNewCode generates new code with GORM tags without modifying the original file
+// Reads the source file and processes it to add native language field mappings
+// Returns the new code result with updated tags and column definitions
+//
+// GetNewCode 生成带有 GORM 标签的新代码而不修改原文件
+// 读取源文件并处理以添加原生语言字段映射
+// 返回包含更新标签和列定义的新代码结果
 func (cfg *Config) GetNewCode() *NewCodeResult {
 	return cfg.makeNewCode(rese.A1(os.ReadFile(cfg.gormStruct.sourcePath)))
 }
@@ -110,6 +148,13 @@ type defineTagModification struct {
 	newTagCode      string   //新标签的新内容-就是标签的完整全部内容
 }
 
+// collectTagModifications analyzes struct fields and collects necessary tag modifications
+// Processes each field to determine if native language column naming is needed
+// Returns a collection of modifications required for proper GORM tag generation
+//
+// collectTagModifications 分析结构体字段并收集必要的标签修改
+// 处理每个字段以确定是否需要原生语言列名
+// 返回正确 GORM 标签生成所需的修改集合
 func (cfg *Config) collectTagModifications(structType *ast.StructType) []*defineTagModification {
 	var results []*defineTagModification
 
@@ -211,6 +256,13 @@ func (cfg *Config) collectTagModifications(structType *ast.StructType) []*define
 	return results
 }
 
+// hasAnyIdxTagUdxTagValue checks if field has any index pattern tag values
+// Examines field tags for idx or udx pattern configurations
+// Returns true if any index pattern tag is found in the field
+//
+// hasAnyIdxTagUdxTagValue 检查字段是否有任何索引模式标签值
+// 检查字段标签中的 idx 或 udx 模式配置
+// 如果在字段中找到任何索引模式标签则返回 true
 func (cfg *Config) hasAnyIdxTagUdxTagValue(fieldItem *ast.Field) bool {
 	if len(fieldItem.Names) != 1 {
 		return false
@@ -231,6 +283,13 @@ func (cfg *Config) hasAnyIdxTagUdxTagValue(fieldItem *ast.Field) bool {
 	return false
 }
 
+// hasOneIdxTagUdxTagValue checks if tag code contains specific index pattern
+// Validates the presence of a particular index pattern in the tag string
+// Returns true if the specified pattern tag is found in the code
+//
+// hasOneIdxTagUdxTagValue 检查标签代码是否包含特定的索引模式
+// 验证标签字符串中是否存在特定的索引模式
+// 如果在代码中找到指定的模式标签则返回 true
 func (cfg *Config) hasOneIdxTagUdxTagValue(tagCode string, patternTagEnum gormidxname.IndexPatternTagEnum) bool {
 	var name = cfg.extractTagFieldGetValue(tagCode, cfg.options.systemTagName, string(patternTagEnum))
 	if name != "" {
@@ -240,6 +299,13 @@ func (cfg *Config) hasOneIdxTagUdxTagValue(tagCode string, patternTagEnum gormid
 	return false
 }
 
+// newFirstNotModification creates modification for fields without existing tags
+// Generates initial tag modification structure for untagged fields
+// Used when field requires native language column naming but has no current tags
+//
+// newFirstNotModification 为没有现有标签的字段创建修改
+// 为未标记的字段生成初始标签修改结构
+// 在字段需要原生语言列名但没有当前标签时使用
 func (cfg *Config) newFirstNotModification(fieldItem *ast.Field, columnName string) *defineTagModification {
 	must.Full(fieldItem)
 	must.Length(fieldItem.Names, 1)
@@ -253,10 +319,24 @@ func (cfg *Config) newFirstNotModification(fieldItem *ast.Field, columnName stri
 	}
 }
 
+// extractTagGetCnmPattern extracts column naming pattern from tag code
+// Retrieves the column naming pattern configuration from system tag
+// Returns pattern string for column name generation validation
+//
+// extractTagGetCnmPattern 从标签代码中提取列名模式
+// 从系统标签中检索列名模式配置
+// 返回用于列名生成验证的模式字符串
 func (cfg *Config) extractTagGetCnmPattern(tagCode string) string {
 	return cfg.extractTagFieldGetValue(tagCode, cfg.options.systemTagName, cfg.options.columnNamingSubTagName)
 }
 
+// extractTagFieldGetValue extracts nested tag field value using dual key lookup
+// Performs two-level extraction from tag code using primary and secondary keys
+// Returns the extracted field value or empty string if not found
+//
+// extractTagFieldGetValue 使用双键查找提取嵌套标签字段值
+// 使用主键和辅助键从标签代码进行两级提取
+// 返回提取的字段值，如果找不到则返回空字符串
 func (cfg *Config) extractTagFieldGetValue(tagCode string, key1 string, key2 string) string {
 	tagValue := syntaxgo_tag.ExtractTagValue(tagCode, key1)
 	if tagValue == "" {
@@ -269,11 +349,25 @@ func (cfg *Config) extractTagFieldGetValue(tagCode string, key1 string, key2 str
 	return tagField
 }
 
+// correctionNewTag contains the result of tag correction operations
+// Holds the corrected column name and updated tag code for field processing
+// Used as intermediate result during tag modification workflow
+//
+// correctionNewTag 包含标签纠正操作的结果
+// 保存纠正的列名和更新的标签代码，用于字段处理
+// 在标签修改工作流中作为中间结果使用
 type correctionNewTag struct {
-	columnName string
-	newTagCode string
+	columnName string // Corrected database column name // 纠正的数据库列名
+	newTagCode string // Updated tag code with corrections // 带有纠正的更新标签代码
 }
 
+// modifyFieldTagCorrection applies corrections to field tag based on schema and pattern
+// Processes GORM field with specified pattern to generate corrected column name and tag
+// Returns corrected tag structure with updated column name and tag code
+//
+// modifyFieldTagCorrection 基于模式和模式对字段标签应用纠正
+// 使用指定模式处理 GORM 字段，生成纠正的列名和标签
+// 返回带有更新列名和标签代码的纠正标签结构
 func (cfg *Config) modifyFieldTagCorrection(schemaField *schema.Field, tag string, patternType gormmomname.PatternEnum) *correctionNewTag {
 	zaplog.LOG.Debug("new_fix_tag_code", zap.String("name", schemaField.Name), zap.String("tag", tag))
 	//在 gorm 里修改 column 内容
@@ -285,6 +379,13 @@ func (cfg *Config) modifyFieldTagCorrection(schemaField *schema.Field, tag strin
 	return newTag
 }
 
+// modifyGormTagWithColumn modifies GORM tag to include appropriate column name
+// Generates database-compatible column name using specified pattern and updates GORM tag
+// Returns corrected tag with correct column specification for database mapping
+//
+// modifyGormTagWithColumn 修改 GORM 标签以包含适当的列名
+// 使用指定模式生成数据库兼容的列名并更新 GORM 标签
+// 返回带有正确列规范的纠正标签，用于数据库映射
 func (cfg *Config) modifyGormTagWithColumn(schemaField *schema.Field, tag string, patternType gormmomname.PatternEnum) *correctionNewTag {
 	pattern := cfg.options.columnNamingStrategies.GetPattern(patternType)
 	columnName := pattern.BuildColumnName(schemaField.Name)
@@ -313,6 +414,13 @@ func (cfg *Config) modifyGormTagWithColumn(schemaField *schema.Field, tag string
 	}
 }
 
+// modifyPatternTagWithName adds or updates pattern tag with specified naming pattern
+// Inserts or modifies system tag to include column naming pattern specification
+// Returns updated tag string with pattern information for consistent processing
+//
+// modifyPatternTagWithName 使用指定的命名模式添加或更新模式标签
+// 插入或修改系统标签以包含列命名模式规范
+// 返回带有模式信息的更新标签字符串，用于一致性处理
 func (cfg *Config) modifyPatternTagWithName(tag string, patternType gormmomname.PatternEnum) string {
 	zaplog.LOG.Debug("modify-pattern-tag-with-name", zap.String("column_name_pattern", string(patternType)))
 

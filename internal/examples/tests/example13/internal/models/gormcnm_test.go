@@ -13,7 +13,9 @@ import (
 
 func TestGen(t *testing.T) {
 	objects := []interface{}{
-		&T用户{},
+		&Example{},
+		&Example2{},
+		&Example3{},
 	}
 
 	require.True(t, t.Run("GenGormMom", func(t *testing.T) {
@@ -33,7 +35,7 @@ func TestGen(t *testing.T) {
 		t.Log(absPath)
 
 		options := gormcngen.NewOptions().
-			WithColumnClassExportable(true). //中间类型名称的样式为导出的 T学生Columns
+			WithColumnClassExportable(true). //中间类型名称的样式为导出的 ExampleColumns
 			WithColumnsMethodRecvName("T").
 			WithColumnsCheckFieldType(true)
 

@@ -14,17 +14,40 @@ import (
 	"gorm.io/gorm/schema"
 )
 
-// GormStruct 结构体的位置和结构体里的字段信息
+// GormStruct represents a GORM struct with its location and field information
+// Contains the source file path, struct name, and comprehensive field mappings
+// Provides structured access to GORM schema and field definitions for processing
+// Maintains ordered field mapping using linked hash map for deterministic generation
+//
+// GormStruct 代表一个 GORM 结构体及其位置和字段信息
+// 包含源文件路径、结构体名称和全面的字段映射
+// 为处理提供对 GORM 模式和字段定义的结构化访问
+// 使用链式哈希映射维护有序字段映射，确保确定性生成
 type GormStruct struct {
-	sourcePath string
-	structName string
-	gormSchema *schema.Schema
-	gormFields *linkedhashmap.Map[string, *schema.Field]
+	sourcePath string                                    // Source file path where struct is defined // 定义结构体的源文件路径
+	structName string                                    // Name of the target struct // 目标结构体的名称
+	gormSchema *schema.Schema                            // GORM schema information // GORM 模式信息
+	gormFields *linkedhashmap.Map[string, *schema.Field] // Ordered field mapping for deterministic processing // 确定性处理的有序字段映射
 }
 
-// NewGormStruct 读取结构体字段信息
+// NewGormStruct creates a new GormStruct instance with field information
+// Reads and processes struct field information from the source file and GORM schema
+// Builds ordered field mapping for deterministic tag generation and processing
+// Returns configured GormStruct prepared for native language tag processing
+//
+// NewGormStruct 创建新的 GormStruct 实例并读取字段信息
+// 从源文件和 GORM 模式中读取和处理结构体字段信息
+// 构建有序字段映射以进行确定性标签生成和处理
+// 返回配置好的 GormStruct，准备进行原生语言标签处理
 func NewGormStruct(sourcePath string, structName string, gormSchema *schema.Schema) *GormStruct {
 	zaplog.LOG.Debug("new-struct-schema-info", zap.String("struct_name", structName), zap.String("source_path", sourcePath))
+
+	// Validate table name for ASCII compatibility before processing
+	// Ensures database compatibility and prevents downstream issues
+	//
+	// 在处理前验证表名的 ASCII 兼容性
+	// 确保数据库兼容性并避免下游问题
+	utils.ValidateTableName(gormSchema.Table, structName)
 
 	return &GormStruct{
 		sourcePath: must.Nice(sourcePath),
