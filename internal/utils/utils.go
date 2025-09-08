@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"unicode"
 
 	"github.com/emirpasic/gods/v2/maps/linkedhashmap"
 	"github.com/yyle88/gormcngen"
@@ -109,24 +110,16 @@ func MustMatchRegexp(regexpRegexp *regexp.Regexp, value string) {
 	}
 }
 
-// ValidateTableName validates table name for database compatibility
-// Checks if table name contains ASCII characters suitable for index generation
-// Provides helpful message with solution when validation fails
+// ValidateTableName validates table name to ensure database support
+// Checks if table name contains ASCII characters suitable to generate indexes
+// Provides actionable message with solution when validation fails
 //
 // ValidateTableName 验证表名的数据库兼容性
 // 检查表名是否包含适合索引生成的 ASCII 字符
 // 在验证失败时提供带解决方案的有用信息
 func ValidateTableName(tableName string, structName string) {
 	// Check if table name contains non-ASCII characters
-	hasNonASCII := false
-	for _, c := range tableName {
-		if c > 127 {
-			hasNonASCII = true
-			break
-		}
-	}
-
-	if hasNonASCII {
+	if !IsASCII(tableName) {
 		zaplog.LOG.Panic(
 			"Table name contains non-ASCII characters which is not compatible. Please add a TableName() method to the struct with an ASCII table name.",
 			zap.String("struct_name", structName),
@@ -147,4 +140,15 @@ func ValidateTableName(tableName string, structName string) {
 			zap.String("solution", fmt.Sprintf("Add this method to the struct: func (%s) TableName() string { return \"compact_name\" }", structName)),
 		)
 	}
+}
+
+// IsASCII checks if string contains just ASCII characters
+// IsASCII 检查字符串是否仅包含 ASCII 字符
+func IsASCII(s string) bool {
+	for _, r := range s {
+		if r > unicode.MaxASCII {
+			return false
+		}
+	}
+	return true
 }

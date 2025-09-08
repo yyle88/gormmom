@@ -21,7 +21,8 @@ func TestGenGormMomAndCnm(t *testing.T) {
 		t.Log("第一步：使用 gormmom 生成日语字段的 mom 标签")
 
 		result := cfg.GenReplaces()
-		t.Logf("gormmom 生成结果: HasChange=%v", result.HasChange())
+		require.False(t, result.HasChange()) // 因为已经替换过，而且写到了新代码里，因此这里就只能是没有变化
+		require.NoError(t, cfg.ValidateGormTags())
 	}))
 
 	require.True(t, t.Run("GenGormCnm", func(t *testing.T) {

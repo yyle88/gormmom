@@ -25,6 +25,7 @@ func TestGen(t *testing.T) {
 
 		result := cfg.GenReplaces()
 		require.False(t, result.HasChange()) // 因为已经替换过，而且写到了新代码里，因此这里就只能是没有变化
+		require.NoError(t, cfg.ValidateGormTags())
 	}))
 
 	// 使用 require.True(t, t.Run(---)) 限制只有前一步成功才执行后一步的

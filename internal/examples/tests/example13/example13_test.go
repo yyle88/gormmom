@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"github.com/yyle88/done"
-	models2 "github.com/yyle88/gormmom/internal/examples/tests/example13/internal/models"
+	"github.com/yyle88/gormmom/internal/examples/tests/example13/internal/models"
 	"github.com/yyle88/gormrepo"
 	"github.com/yyle88/gormrepo/gormclass"
 	"github.com/yyle88/neatjson/neatjsons"
@@ -28,14 +28,14 @@ func TestMain(m *testing.M) {
 	}))
 	defer rese.F0(rese.P1(db.DB()).Close)
 
-	done.Done(db.AutoMigrate(&models2.Example{}))
+	done.Done(db.AutoMigrate(&models.Example{}))
 
 	caseDB = db
 	m.Run()
 }
 
 func TestExample(t *testing.T) {
-	examples := make([]*models2.Example, 0, 10)
+	examples := make([]*models.Example, 0, 10)
 	for i := 0; i < 10; i++ {
 		one := newFakeExample(t)
 		t.Log(neatjsons.S(one))
@@ -43,12 +43,12 @@ func TestExample(t *testing.T) {
 		examples = append(examples, one)
 	}
 
-	repo := gormrepo.NewRepo(gormclass.Use(&models2.Example{}))
+	repo := gormrepo.NewRepo(gormclass.Use(&models.Example{}))
 
 	t.Run("select-first", func(t *testing.T) {
 		name := examples[rand.IntN(len(examples))].V名称
 
-		example, err := repo.Repo(caseDB).First(func(db *gorm.DB, cls *models2.ExampleColumns) *gorm.DB {
+		example, err := repo.Repo(caseDB).First(func(db *gorm.DB, cls *models.ExampleColumns) *gorm.DB {
 			return db.Where(cls.V名称.Eq(name))
 		})
 		require.NoError(t, err)
@@ -63,7 +63,7 @@ func TestExample(t *testing.T) {
 			names = append(names, one.V名称)
 		}
 
-		results, err := repo.Repo(caseDB).Find(func(db *gorm.DB, cls *models2.ExampleColumns) *gorm.DB {
+		results, err := repo.Repo(caseDB).Find(func(db *gorm.DB, cls *models.ExampleColumns) *gorm.DB {
 			return db.Where(cls.V名称.In(names))
 		})
 		require.NoError(t, err)
@@ -71,8 +71,8 @@ func TestExample(t *testing.T) {
 	})
 }
 
-func newFakeExample(t *testing.T) *models2.Example {
-	a := &models2.Example{}
+func newFakeExample(t *testing.T) *models.Example {
+	a := &models.Example{}
 	require.NoError(t, gofakeit.Struct(a))
 	a.ID = 0 // 设置为0以便于使用 gorm 创建数据
 	return a
