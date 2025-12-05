@@ -31,17 +31,17 @@ type Example struct {
 	UpdatedAt time.Time `gorm:"autoUpdateTime"`
 }
 
-func TestGetNewCode(t *testing.T) {
-	cfg := NewConfig(NewGormStructFromStruct[Example](runpath.CurrentPath()), NewOptions())
+func TestPreview(t *testing.T) {
+	cfg := NewConfig(ParseStruct[Example](runpath.CurrentPath()), NewOptions())
 	t.Log(cfg)
 
-	newCode := cfg.GetNewCode()
-	t.Log(newCode.SrcPath)
+	newCode := cfg.Preview()
+	t.Log(newCode.SourcePath)
 	t.Log(newCode.ChangedLineCount)
 
 	require.Equal(t, 7, newCode.ChangedLineCount)
 
-	results := utils.ParseTagsTrimBackticks(newCode.NewCode, &Example{})
+	results := utils.ParseTagsTrimBackticks(newCode.OutputCode, &Example{})
 	t.Log(neatjsons.S(results))
 	require.Equal(t, `gorm:"column:v_0d54_f079;type:text" mom:"mcp:s63;"`, resb.C1(results.Get("V名称")))
 	require.Equal(t, `gorm:"column:V_575B_B56B;" mom:"mcp:S63;"`, resb.C1(results.Get("V字段")))
@@ -49,17 +49,17 @@ func TestGetNewCode(t *testing.T) {
 	require.Equal(t, `gorm:"column:V_7972_8A6B;type:int32" mom:"mcp:S63;"`, resb.C1(results.Get("V特殊")))
 }
 
-func TestGetNewCode_S63(t *testing.T) {
-	cfg := NewConfig(NewGormStructFromStruct[Example](runpath.CurrentPath()), NewOptions().WithDefaultColumnPattern(gormmomname.NewUppercase63pattern()))
+func TestPreview_S63(t *testing.T) {
+	cfg := NewConfig(ParseStruct[Example](runpath.CurrentPath()), NewOptions().WithDefaultColumnPattern(gormmomname.NewUppercase63pattern()))
 	t.Log(cfg)
 
-	newCode := cfg.GetNewCode()
-	t.Log(newCode.SrcPath)
+	newCode := cfg.Preview()
+	t.Log(newCode.SourcePath)
 	t.Log(newCode.ChangedLineCount)
 
 	require.Equal(t, 7, newCode.ChangedLineCount)
 
-	results := utils.ParseTagsTrimBackticks(newCode.NewCode, &Example{})
+	results := utils.ParseTagsTrimBackticks(newCode.OutputCode, &Example{})
 	t.Log(neatjsons.S(results))
 	require.Equal(t, `gorm:"column:V_575B_B56B;" mom:"mcp:S63;"`, resb.C1(results.Get("V字段")))
 }
@@ -68,17 +68,17 @@ type Example5 struct {
 	V嘿哈 string `gorm:"column:;type:text"`
 }
 
-func TestGetNewCode_Example5(t *testing.T) {
-	cfg := NewConfig(NewGormStructFromStruct[Example5](runpath.CurrentPath()), NewOptions().WithDefaultColumnPattern(gormmomname.NewLowercase30pattern()))
+func TestPreview_Example5(t *testing.T) {
+	cfg := NewConfig(ParseStruct[Example5](runpath.CurrentPath()), NewOptions().WithDefaultColumnPattern(gormmomname.NewLowercase30pattern()))
 	t.Log(cfg)
 
-	newCode := cfg.GetNewCode()
-	t.Log(newCode.SrcPath)
+	newCode := cfg.Preview()
+	t.Log(newCode.SourcePath)
 	t.Log(newCode.ChangedLineCount)
 
 	require.Equal(t, 1, newCode.ChangedLineCount)
 
-	results := utils.ParseTagsTrimBackticks(newCode.NewCode, &Example5{})
+	results := utils.ParseTagsTrimBackticks(newCode.OutputCode, &Example5{})
 	t.Log(neatjsons.S(results))
 	require.Equal(t, `gorm:"column:v_3f56_c854;type:text" mom:"mcp:s30;"`, resb.C1(results.Get("V嘿哈")))
 }

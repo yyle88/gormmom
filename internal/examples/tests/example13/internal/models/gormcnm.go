@@ -1,3 +1,8 @@
+// Code generated using gormcngen. DO NOT EDIT.
+// This file was auto generated via github.com/yyle88/gormcngen
+// Generated from: gormcnm_test.go:43 -> models.TestGen.func2
+// ========== GORMCNGEN:DO-NOT-EDIT-MARKER:END ==========
+
 package models
 
 import (
@@ -9,6 +14,7 @@ import (
 
 func (T *Example) Columns() *ExampleColumns {
 	return &ExampleColumns{
+		// Auto-generated: column names and types mapping. DO NOT EDIT. // 自动生成：列名和类型映射。请勿编辑。
 		ID:        gormcnm.Cnm(T.ID, "id"),
 		V名称:       gormcnm.Cnm(T.V名称, "v_0d54_f079"),
 		V字段:       gormcnm.Cnm(T.V字段, "v_575b_b56b"),
@@ -24,9 +30,9 @@ func (T *Example) Columns() *ExampleColumns {
 }
 
 type ExampleColumns struct {
-	// Embedding operation functions make it easy to use // 继承操作函数便于使用
+	// Auto-generated: embedding operation functions to make it simple to use. DO NOT EDIT. // 自动生成：嵌入操作函数便于使用。请勿编辑。
 	gormcnm.ColumnOperationClass
-	// The column names and types of the model's columns // 模型各列的列名和类型
+	// Auto-generated: column names and types in database table. DO NOT EDIT. // 自动生成：数据库表的列名和类型。请勿编辑。
 	ID        gormcnm.ColumnName[int32]
 	V名称       gormcnm.ColumnName[string]
 	V字段       gormcnm.ColumnName[string]
@@ -42,6 +48,7 @@ type ExampleColumns struct {
 
 func (T *Example2) Columns() *Example2Columns {
 	return &Example2Columns{
+		// Auto-generated: column names and types mapping. DO NOT EDIT. // 自动生成：列名和类型映射。请勿编辑。
 		ID:        gormcnm.Cnm(T.ID, "id"),
 		V名称:       gormcnm.Cnm(T.V名称, "V_0D54_F079"),
 		V字段:       gormcnm.Cnm(T.V字段, "v_575b_b56b"),
@@ -57,9 +64,9 @@ func (T *Example2) Columns() *Example2Columns {
 }
 
 type Example2Columns struct {
-	// Embedding operation functions make it easy to use // 继承操作函数便于使用
+	// Auto-generated: embedding operation functions to make it simple to use. DO NOT EDIT. // 自动生成：嵌入操作函数便于使用。请勿编辑。
 	gormcnm.ColumnOperationClass
-	// The column names and types of the model's columns // 模型各列的列名和类型
+	// Auto-generated: column names and types in database table. DO NOT EDIT. // 自动生成：数据库表的列名和类型。请勿编辑。
 	ID        gormcnm.ColumnName[int32]
 	V名称       gormcnm.ColumnName[string]
 	V字段       gormcnm.ColumnName[string]
@@ -75,6 +82,7 @@ type Example2Columns struct {
 
 func (T *Example3) Columns() *Example3Columns {
 	return &Example3Columns{
+		// Auto-generated: column names and types mapping. DO NOT EDIT. // 自动生成：列名和类型映射。请勿编辑。
 		ID:        gormcnm.Cnm(T.ID, "id"),
 		CreatedAt: gormcnm.Cnm(T.CreatedAt, "created_at"),
 		UpdatedAt: gormcnm.Cnm(T.UpdatedAt, "updated_at"),
@@ -89,9 +97,9 @@ func (T *Example3) Columns() *Example3Columns {
 }
 
 type Example3Columns struct {
-	// Embedding operation functions make it easy to use // 继承操作函数便于使用
+	// Auto-generated: embedding operation functions to make it simple to use. DO NOT EDIT. // 自动生成：嵌入操作函数便于使用。请勿编辑。
 	gormcnm.ColumnOperationClass
-	// The column names and types of the model's columns // 模型各列的列名和类型
+	// Auto-generated: column names and types in database table. DO NOT EDIT. // 自动生成：数据库表的列名和类型。请勿编辑。
 	ID        gormcnm.ColumnName[uint]
 	CreatedAt gormcnm.ColumnName[time.Time]
 	UpdatedAt gormcnm.ColumnName[time.Time]

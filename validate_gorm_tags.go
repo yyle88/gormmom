@@ -27,11 +27,18 @@ func (configs Configs) ValidateGormTags() error {
 	return nil
 }
 
+// validateGormTags validates GORM tags on a single config instance
+// Checks table name, column names, and index names against configured patterns
+// Returns error if any validation fails during the checking process
+//
+// validateGormTags 验证单个配置实例的 GORM 标签
+// 根据配置的模式检查表名、列名和索引名
+// 如果在检查过程中任何验证失败则返回错误
 func (cfg *Config) validateGormTags() error {
-	// Use GORM schema fields for validation along with naming strategies
+	// Use GORM schema fields with naming strategies
 	// 使用 GORM 模式字段结合命名策略进行验证
-	structName := cfg.gormStruct.structName
-	gormSchema := cfg.gormStruct.gormSchema
+	structName := cfg.structI.structName
+	gormSchema := cfg.structI.gormSchema
 
 	// Check schema table name
 	// 检查模式表名
@@ -54,8 +61,13 @@ func (cfg *Config) validateGormTags() error {
 	return nil
 }
 
-// validateColumnNaming checks column names using columnNamingStrategies
-// validateColumnNaming 使用 columnNamingStrategies 检查列名
+// validateColumnNaming checks column names using configured naming strategies
+// Extracts pattern from tag and validates the column name against that pattern
+// Returns error if column name does not match the expected naming convention
+//
+// validateColumnNaming 使用配置的命名策略检查列名
+// 从标签中提取模式并根据该模式验证列名
+// 如果列名不匹配预期的命名规范则返回错误
 func (cfg *Config) validateColumnNaming(structName string, field *schema.Field) error {
 	// Extract pattern from mom tag, with default fallback
 	// 从 mom 标签中提取模式，有默认值作为后备
@@ -109,7 +121,12 @@ func (cfg *Config) validateAllIndexNames(structName string, gormSchema *schema.S
 }
 
 // extractFieldIndexPattern extracts index pattern from field's mom tag based on index type
+// Determines the pattern tag name based on index class (UNIQUE or standard)
+// Returns the pattern string for index name validation
+//
 // extractFieldIndexPattern 根据索引类型从字段的 mom 标签中提取索引模式
+// 基于索引类别（UNIQUE 或标准）确定模式标签名
+// 返回用于索引名验证的模式字符串
 func (cfg *Config) extractFieldIndexPattern(field *schema.Field, index *schema.Index) string {
 	// Get the struct field tag to extract pattern information
 	// 获取结构体字段标签以提取模式信息

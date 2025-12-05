@@ -36,7 +36,7 @@ While mastering English is essential for programmers, I believe that even indivi
 
 ---
 
-For example, during this project, I encountered difficulty when trying to extract content from tags. The recommended term was `extract`, but I initially only thought of alternatives such as `get`, `parse`, or `obtain`.
+For example, during this project, I encountered difficulty when trying to extract content from tags. The recommended term was `extract`, but I first just thought of alternatives such as `get`, `parse`, or `obtain`.
 
 This experience reinforced my belief in the necessity of programming in your native language. Without it, code ends up as a patchwork of imprecise terms, which can lead to confusion and inefficiency.
 
@@ -45,7 +45,7 @@ This experience reinforced my belief in the necessity of programming in your nat
 Another issue I frequently face is that in English, opposite meanings are often expressed with words of varying lengths. For instance:  
 `up/down`, `left/right`, `open/close`, `start/stop`, `public/private`.
 
-Programmers are often forced to choose from a limited set of words that only loosely fit the context, such as:
+Programmers are often forced to choose from a limited set of words that just loosely fit the context, such as:
 - `get/set`
 - `start/close`
 - `create/update/select/delete`.
@@ -54,7 +54,7 @@ For non-native English speakers, this inconsistency can create confusion and hin
 
 ---
 
-Currently, this tool does not include a translation feature and cannot automatically convert native language code into English.
+Now, this tool does not include a translation feature and cannot auto convert native language code into English.
 
 It focuses on simplifying the process of generating GORM tags.
 

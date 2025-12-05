@@ -1,9 +1,15 @@
+// Code generated using gormcngen. DO NOT EDIT.
+// This file was auto generated via github.com/yyle88/gormcngen
+// Generated from: gormcnm_test.go:41 -> models.TestGen.func2
+// ========== GORMCNGEN:DO-NOT-EDIT-MARKER:END ==========
+
 package models
 
 import "github.com/yyle88/gormcnm"
 
 func (T *T用户) Columns() *T用户Columns {
 	return &T用户Columns{
+		// Auto-generated: column names and types mapping. DO NOT EDIT. // 自动生成：列名和类型映射。请勿编辑。
 		ID:   gormcnm.Cnm(T.ID, "id"),
 		U用户名: gormcnm.Cnm(T.U用户名, "u_2875_3762_0d54"),
 		E邮箱:  gormcnm.Cnm(T.E邮箱, "e_ae90_b17b"),
@@ -15,9 +21,9 @@ func (T *T用户) Columns() *T用户Columns {
 }
 
 type T用户Columns struct {
-	// Embedding operation functions make it easy to use // 继承操作函数便于使用
+	// Auto-generated: embedding operation functions to make it simple to use. DO NOT EDIT. // 自动生成：嵌入操作函数便于使用。请勿编辑。
 	gormcnm.ColumnOperationClass
-	// The column names and types of the model's columns // 模型各列的列名和类型
+	// Auto-generated: column names and types in database table. DO NOT EDIT. // 自动生成：数据库表的列名和类型。请勿编辑。
 	ID   gormcnm.ColumnName[uint]
 	U用户名 gormcnm.ColumnName[string]
 	E邮箱  gormcnm.ColumnName[string]

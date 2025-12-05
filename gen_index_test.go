@@ -49,16 +49,16 @@ func TestDryRunMigrate(t *testing.T) {
 }
 
 func TestConfig_GenCode_GenIndexes(t *testing.T) {
-	cfg := NewConfig(NewGormStructFromStruct[Example3](runpath.CurrentPath()), NewOptions())
+	cfg := NewConfig(ParseStruct[Example3](runpath.CurrentPath()), NewOptions())
 	t.Log(cfg)
 
-	newCode := cfg.GetNewCode()
-	t.Log(newCode.SrcPath)
+	newCode := cfg.Preview()
+	t.Log(newCode.SourcePath)
 	t.Log(newCode.ChangedLineCount)
 
 	require.Equal(t, 3, newCode.ChangedLineCount)
 
-	results := utils.ParseTagsTrimBackticks(newCode.NewCode, &Example3{})
+	results := utils.ParseTagsTrimBackticks(newCode.OutputCode, &Example3{})
 	t.Log(neatjsons.S(results))
 	require.Equal(t, `gorm:"column:V_D359_0D54;index:idx_example3_v_d359_0d54" mom:"mcp:S63;idx:cnm;"`, resb.C1(results.Get("V姓名")))
 	require.Equal(t, `gorm:"column:V_745E_849F;unique" mom:"mcp:S63;"`, resb.C1(results.Get("V年龄")))
@@ -77,16 +77,16 @@ func (*Example4) TableName() string {
 }
 
 func TestConfig_GenCode_GenIndexes_Example4(t *testing.T) {
-	cfg := NewConfig(NewGormStructFromStruct[Example4](runpath.CurrentPath()), NewOptions())
+	cfg := NewConfig(ParseStruct[Example4](runpath.CurrentPath()), NewOptions())
 	t.Log(cfg)
 
-	newCode := cfg.GetNewCode()
-	t.Log(newCode.SrcPath)
+	newCode := cfg.Preview()
+	t.Log(newCode.SourcePath)
 	t.Log(newCode.ChangedLineCount)
 
 	require.Equal(t, 4, newCode.ChangedLineCount)
 
-	results := utils.ParseTagsTrimBackticks(newCode.NewCode, &Example4{})
+	results := utils.ParseTagsTrimBackticks(newCode.OutputCode, &Example4{})
 	t.Log(neatjsons.S(results))
 	require.Equal(t, `gorm:"column:v_c18b_f753;primaryKey" mom:"mcp:s63;"`, resb.C1(results.Get("V证号")))
 	require.Equal(t, `gorm:"column:v_d359_0d54;index:idx_example4_v_d359_0d54" mom:"mcp:s63;idx:cnm;"`, resb.C1(results.Get("V姓名")))
@@ -101,16 +101,16 @@ type Example6 struct {
 }
 
 func TestConfig_GenCode_GenIndexes_Example6(t *testing.T) {
-	cfg := NewConfig(NewGormStructFromStruct[Example6](runpath.CurrentPath()), NewOptions())
+	cfg := NewConfig(ParseStruct[Example6](runpath.CurrentPath()), NewOptions())
 	t.Log(cfg)
 
-	newCode := cfg.GetNewCode()
-	t.Log(newCode.SrcPath)
+	newCode := cfg.Preview()
+	t.Log(newCode.SourcePath)
 	t.Log(newCode.ChangedLineCount)
 
 	require.Equal(t, 3, newCode.ChangedLineCount)
 
-	results := utils.ParseTagsTrimBackticks(newCode.NewCode, &Example6{})
+	results := utils.ParseTagsTrimBackticks(newCode.OutputCode, &Example6{})
 	t.Log(neatjsons.S(results))
 	require.Equal(t, `gorm:"column:v_268d_f753;primaryKey" mom:"mcp:s63;"`, resb.C1(results.Get("V账号")))
 	require.Equal(t, `gorm:"column:person_num;uniqueIndex:udx_example6_person_num" mom:"udx:cnm;"`, resb.C1(results.Get("V身份证号")))

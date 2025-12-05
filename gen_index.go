@@ -43,15 +43,15 @@ func (cfg *Config) correctIndexNames(modifications []*defineTagModification) {
 		mapTagModifications[step.structFieldName] = step
 	}
 
-	schemaIndexes := cfg.gormStruct.gormSchema.ParseIndexes()
-	zaplog.LOG.Debug("check_indexes", zap.String("object_class", cfg.gormStruct.gormSchema.Name), zap.String("table_name", cfg.gormStruct.gormSchema.Table), zap.Int("index_count", len(schemaIndexes)))
+	schemaIndexes := cfg.structI.gormSchema.ParseIndexes()
+	zaplog.LOG.Debug("check_indexes", zap.String("object_class", cfg.structI.gormSchema.Name), zap.String("table_name", cfg.structI.gormSchema.Table), zap.Int("index_count", len(schemaIndexes)))
 	for idx, node := range schemaIndexes {
 		zaplog.LOG.Debug("foreach_index", zap.String("index_desc", fmt.Sprintf("(%d/%d)", idx, len(schemaIndexes))))
 		zaplog.LOG.Debug("check_a_index", zap.String("index_name", node.Name), zap.Int("field_size", len(node.Fields)))
 		if len(node.Fields) == 1 { //只检查单列索引，因为复合索引就得手写名称，因此没有问题
-			rep, ok := mapTagModifications[node.Fields[0].Name]
+			item, ok := mapTagModifications[node.Fields[0].Name]
 			if ok {
-				cfg.rewriteSingleColumnIndex(node, rep)
+				cfg.rewriteSingleColumnIndex(node, item)
 			} else {
 				cfg.validateSingleColumnIndex(node.Name, node.Fields[0].Name)
 			}
@@ -69,7 +69,7 @@ func (cfg *Config) correctIndexNames(modifications []*defineTagModification) {
 // 使用配置的命名策略和模式验证生成新的索引名
 // 使用适当的索引名和模式规范更新 GORM 标签
 func (cfg *Config) rewriteSingleColumnIndex(schemaIndex *schema.Index, modification *defineTagModification) {
-	zaplog.LOG.Debug("rewrite_single_column_index", zap.String("table_name", cfg.gormStruct.gormSchema.Table), zap.String("field_name", modification.structFieldName), zap.String("index_name", schemaIndex.Name), zap.String("index_class", schemaIndex.Class))
+	zaplog.LOG.Debug("rewrite_single_column_index", zap.String("table_name", cfg.structI.gormSchema.Table), zap.String("field_name", modification.structFieldName), zap.String("index_name", schemaIndex.Name), zap.String("index_class", schemaIndex.Class))
 
 	columnName := must.Nice(modification.columnName)
 	zaplog.LOG.Debug("new_column_name", zap.String("name", modification.structFieldName), zap.String("new_column_name", columnName))
@@ -112,7 +112,7 @@ func (cfg *Config) rewriteSingleColumnIndex(schemaIndex *schema.Index, modificat
 	pattern := cfg.options.indexNamingStrategies.GetPattern(patternEnum)
 
 	indexNameResult := must.Nice(pattern.BuildIndexName(schemaIndex, &gormidxname.BuildIndexParam{
-		TableName:  cfg.gormStruct.gormSchema.Table,
+		TableName:  cfg.structI.gormSchema.Table,
 		FieldName:  modification.structFieldName,
 		ColumnName: columnName,
 	}))

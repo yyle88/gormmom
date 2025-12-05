@@ -57,17 +57,38 @@ func NewGormStruct(sourcePath string, structName string, gormSchema *schema.Sche
 	}
 }
 
-// NewGormStructFromStruct 使用泛型创建参数信息。T 只能传类型名称而非带指针的类型名
-func NewGormStructFromStruct[StructType any](sourcePath string) *GormStruct {
-	return NewGormStructFromObject(sourcePath, new(StructType))
+// ParseStruct creates GormStruct using generic type parameter
+// T must be the struct type name without pointer (e.g., User not *User)
+// Returns configured GormStruct with schema information extracted from type
+//
+// ParseStruct 使用泛型类型参数创建 GormStruct
+// T 只能传类型名称而非带指针的类型名（如 User 而非 *User）
+// 返回配置好的 GormStruct，包含从类型中提取的模式信息
+func ParseStruct[StructType any](sourcePath string) *GormStruct {
+	return ParseObject(sourcePath, new(StructType))
 }
 
-// NewGormStructFromObject 使用对象创建参数信息 object 传对象或者对象指针都行
-func NewGormStructFromObject(sourcePath string, object interface{}) *GormStruct {
+// ParseObject creates GormStruct from an object instance
+// Accepts both struct value and struct pointer as the object parameter
+// Returns configured GormStruct with schema information extracted from object
+//
+// ParseObject 从对象实例创建 GormStruct
+// object 参数可以传对象值或对象指针
+// 返回配置好的 GormStruct，包含从对象中提取的模式信息
+func ParseObject(sourcePath string, object interface{}) *GormStruct {
 	return NewGormStruct(sourcePath, syntaxgo_reflect.GetTypeNameV3(object), utils.ParseSchema(object))
 }
 
-func NewGormStructs(root string, objects []interface{}) []*GormStruct {
+// ParseObjects creates multiple GormStruct instances from a collection of objects
+// Scans Go files in the root DIR to locate struct definitions and build mappings
+// Uses ordered map to ensure deterministic processing sequence across executions
+// Returns slice of configured GormStruct instances matched with source locations
+//
+// ParseObjects 从对象集合创建多个 GormStruct 实例
+// 扫描根 DIR 中的 Go 文件以定位结构体定义并构建映射
+// 使用有序映射确保跨执行的确定性处理顺序
+// 返回与源代码位置匹配的配置好的 GormStruct 实例切片
+func ParseObjects(root string, objects []interface{}) []*GormStruct {
 	var objectMap = linkedhashmap.New[string, any]() // 使用有序map来存储对象，避免乱序执行导致每次执行结果不同
 	for idx, object := range objects {
 		structName := syntaxgo_reflect.GetTypeNameV3(object) // 获取结构体名称
@@ -88,7 +109,7 @@ func NewGormStructs(root string, objects []interface{}) []*GormStruct {
 			// 得到相应的结构体对象
 			oneObject := resb.V1(objectMap.Get(structName))
 			// 得到结构体类型的定义，代码文件路径，结构体名称，内部字段列表
-			results = append(results, NewGormStructFromObject(sourcePath, oneObject))
+			results = append(results, ParseObject(sourcePath, oneObject))
 			// 移除，以确保只处理一次，这样也能避免重复搜索代码块
 			objectMap.Remove(structName)
 		}

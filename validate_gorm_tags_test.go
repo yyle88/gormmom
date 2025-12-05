@@ -28,7 +28,7 @@ func TestConfigs_ValidateGormTags(t *testing.T) {
 		&Product1{},
 	}
 
-	params := gormmom.NewGormStructs(runpath.PARENT.Path(), objects)
+	params := gormmom.ParseObjects(runpath.PARENT.Path(), objects)
 
 	cfg := gormmom.NewConfigs(params, gormmom.NewOptions())
 	t.Log(cfg)
@@ -56,7 +56,7 @@ func TestConfigs_ValidateGormTags_2(t *testing.T) {
 		&Product2{},
 	}
 
-	params := gormmom.NewGormStructs(runpath.PARENT.Path(), objects)
+	params := gormmom.ParseObjects(runpath.PARENT.Path(), objects)
 
 	cfg := gormmom.NewConfigs(params, gormmom.NewOptions())
 	t.Log(cfg)

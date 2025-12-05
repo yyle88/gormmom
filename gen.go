@@ -39,8 +39,8 @@ import (
 // 包含目标结构体信息和生成选项，用于自定义输出
 // 提供智能映射和确定性的数据库兼容标签生成
 type Config struct {
-	gormStruct *GormStruct // Target GORM struct to process // 要处理的目标 GORM 结构体
-	options    *Options    // Generation options and settings // 生成选项和设置
+	structI *GormStruct // Target GORM struct to process // 要处理的目标 GORM 结构体
+	options *Options    // Generation options and settings // 生成选项和设置
 }
 
 // NewConfig creates a new configuration instance with GORM tag generation
@@ -50,45 +50,45 @@ type Config struct {
 // NewConfig 创建新的 GORM 标签生成配置实例
 // 接收目标结构体和生成选项，返回配置好的实例
 // 用于使用自定义设置初始化生成工作流程
-func NewConfig(gormStruct *GormStruct, options *Options) *Config {
+func NewConfig(structI *GormStruct, options *Options) *Config {
 	return &Config{
-		gormStruct: gormStruct,
-		options:    options,
+		structI: structI,
+		options: options,
 	}
 }
 
-// GenReplace generates new GORM tags and replaces the original source file
+// Generate generates new GORM tags and replaces the original source file
 // Processes the struct definition to add database-compatible tags and column names
 // Formats the generated code and writes back to the source file when changes detected
 // Returns the result containing the new code and change status
 //
-// GenReplace 生成新的 GORM 标签并替换原始源文件
+// Generate 生成新的 GORM 标签并替换原始源文件
 // 处理结构体定义以添加数据库兼容的标签和列名
 // 检测到变化时自动格式化生成的代码并写回源文件
 // 返回包含新代码和变化状态的结果
-func (cfg *Config) GenReplace() *NewCodeResult {
-	newCode := cfg.GetNewCode()
-	srcPath := must.SameNice(cfg.gormStruct.sourcePath, newCode.SrcPath)
+func (cfg *Config) Generate() *CodeResult {
+	newCode := cfg.Preview()
+	srcPath := must.SameNice(cfg.structI.sourcePath, newCode.SourcePath)
 	if newCode.HasChange() { // 只有当有变化时才写文件
-		srcCode := must.Have(rese.A1(formatgo.FormatBytes(newCode.NewCode)))
+		srcCode := must.Have(rese.A1(formatgo.FormatBytes(newCode.OutputCode)))
 		must.Done(os.WriteFile(srcPath, srcCode, 0644))
-		newCode.NewCode = srcCode
+		newCode.OutputCode = srcCode
 	}
 	return newCode
 }
 
-// GetNewCode generates new code with GORM tags without modifying the original file
+// Preview generates new code with GORM tags without modifying the original file
 // Reads the source file and processes it to add native language field mappings
 // Returns the new code result with updated tags and column definitions
 //
-// GetNewCode 生成带有 GORM 标签的新代码而不修改原文件
+// Preview 生成带有 GORM 标签的新代码而不修改原文件
 // 读取源文件并处理以添加原生语言字段映射
 // 返回包含更新标签和列定义的新代码结果
-func (cfg *Config) GetNewCode() *NewCodeResult {
-	return cfg.makeNewCode(rese.A1(os.ReadFile(cfg.gormStruct.sourcePath)))
+func (cfg *Config) Preview() *CodeResult {
+	return cfg.makeNewCode(rese.A1(os.ReadFile(cfg.structI.sourcePath)))
 }
 
-func (cfg *Config) makeNewCode(sourceCode []byte) *NewCodeResult {
+func (cfg *Config) makeNewCode(sourceCode []byte) *CodeResult {
 	astBundle := rese.C1(syntaxgo_ast.NewAstBundleV1(sourceCode))
 	astFile, fileSet := astBundle.GetBundle()
 	// 使用语法分析树 ast 找到结构体的代码，就像这样
@@ -96,10 +96,10 @@ func (cfg *Config) makeNewCode(sourceCode []byte) *NewCodeResult {
 	//    Name string
 	// }
 	// 结果只包含结构体的内容
-	structType, ok := syntaxgo_search.FindStructTypeByName(astFile, cfg.gormStruct.structName)
+	structType, ok := syntaxgo_search.FindStructTypeByName(astFile, cfg.structI.structName)
 	if !ok {
 		const reason = "CAN NOT FIND STRUCT TYPE"
-		zaplog.LOG.Panic(reason, zap.String("struct_name", cfg.gormStruct.structName))
+		zaplog.LOG.Panic(reason, zap.String("struct_name", cfg.structI.structName))
 		panic(reason)
 	}
 	done.Done(ast.Print(fileSet, structType))
@@ -107,7 +107,7 @@ func (cfg *Config) makeNewCode(sourceCode []byte) *NewCodeResult {
 	// 这里拿到的是要修改的操作，具体指改哪个文件哪个结构体的哪个字段，哪个位置的代码，以及新代码的内容
 	modifications := cfg.collectTagModifications(structType)
 
-	if cfg.options.renewIndexName {
+	if cfg.options.autoIndexName {
 		//这里增加个新逻辑，就是单列索引的索引名称不正确，需要也校正索引名，因此这个函数会补充标签内容
 		cfg.correctIndexNames(modifications)
 
@@ -134,18 +134,25 @@ func (cfg *Config) makeNewCode(sourceCode []byte) *NewCodeResult {
 		newCode = syntaxgo_astnode.ChangeNodeCode(newCode, step.tagPosNode, newTagCode)
 		changedLineCount++
 	}
-	return &NewCodeResult{
-		NewCode:          newCode,
-		SrcPath:          cfg.gormStruct.sourcePath,
+	return &CodeResult{
+		OutputCode:       newCode,
+		SourcePath:       cfg.structI.sourcePath,
 		ChangedLineCount: changedLineCount,
 	}
 }
 
+// defineTagModification contains tag modification details for a single field
+// Holds field name, column name, position, and new tag content for replacement
+// Used internally to track and apply tag changes during generation
+//
+// defineTagModification 包含单个字段的标签修改详情
+// 保存字段名、列名、位置和用于替换的新标签内容
+// 在生成过程中内部使用以跟踪和应用标签更改
 type defineTagModification struct {
-	structFieldName string   //结构体的字段名
-	columnName      string   //数据表中的列名
-	tagPosNode      ast.Node //标签的起止位置-就是在src源码中的位置，便于后面的替换代码
-	newTagCode      string   //新标签的新内容-就是标签的完整全部内容
+	structFieldName string   // Struct field name // 结构体的字段名
+	columnName      string   // Database column name // 数据表中的列名
+	tagPosNode      ast.Node // Tag position node in source code // 标签在源码中的起止位置
+	newTagCode      string   // New tag code content // 新标签的完整内容
 }
 
 // collectTagModifications analyzes struct fields and collects necessary tag modifications
@@ -169,18 +176,18 @@ func (cfg *Config) collectTagModifications(structType *ast.StructType) []*define
 			zaplog.LOG.Debug("process", zap.String("struct_field_name:", fieldName.Name))
 			zaplog.LOG.Debug("--")
 
-			schemaColumn, exist := cfg.gormStruct.gormFields.Get(fieldName.Name)
+			schemaColumn, exist := cfg.structI.gormFields.Get(fieldName.Name)
 			if !exist { //比如字段是 "V哈哈" 就没事 而假如是 "v哈哈" 或者 "哈哈" 就不行，因为非以大写字母开始的字段，就没有gorm的列名
-				zaplog.LOG.Debug("NO SCHEMA_FIELD - MAYBE NAME IS UNEXPORTED", zap.String("struct_name", cfg.gormStruct.structName), zap.String("struct_field_name", fieldName.Name))
+				zaplog.LOG.Debug("NO SCHEMA_FIELD - MAYBE NAME IS UNEXPORTED", zap.String("struct_name", cfg.structI.structName), zap.String("struct_field_name", fieldName.Name))
 				continue
 			}
 
 			if fieldItem.Tag == nil {
-				zaplog.LOG.Debug("NO TAG", zap.String("struct_name", cfg.gormStruct.structName), zap.String("struct_field_name", fieldName.Name))
+				zaplog.LOG.Debug("NO TAG", zap.String("struct_name", cfg.structI.structName), zap.String("struct_field_name", fieldName.Name))
 
 				// 假如配置跳过简单字段，而这个字段恰好是简单字段时，就跳过（因为没有标签，也就是没有配置规则）
 				if cfg.options.skipBasicColumnName && defaultPattern.CheckColumnName(schemaColumn.DBName) {
-					zaplog.LOG.Debug("SKIP SIMPLE FIELD", zap.String("struct_name", cfg.gormStruct.structName), zap.String("struct_field_name", fieldName.Name))
+					zaplog.LOG.Debug("SKIP SIMPLE FIELD", zap.String("struct_name", cfg.structI.structName), zap.String("struct_field_name", fieldName.Name))
 					continue
 				}
 
@@ -188,7 +195,7 @@ func (cfg *Config) collectTagModifications(structType *ast.StructType) []*define
 				if !defaultPattern.CheckColumnName(schemaColumn.DBName) {
 					if len(fieldItem.Names) >= 2 { //比如 a,b int 这种两个字段在一起，但其中一个字段的列名不正确时，就没法自动解决啦（其实有办法但不想实现，因为代价较大而没有收益）
 						const reason = "CAN NOT HANDLE THIS SITUATION"
-						zaplog.LOG.Panic(reason, zap.String("struct_name", cfg.gormStruct.structName), zap.String("struct_field_name", fieldName.Name))
+						zaplog.LOG.Panic(reason, zap.String("struct_name", cfg.structI.structName), zap.String("struct_field_name", fieldName.Name))
 						panic(reason) //这种情况下当有错时，就不处理这种情况，就需要程序员先把两个字段定义到两行里
 					}
 					// 需要修改标签内容
@@ -215,8 +222,8 @@ func (cfg *Config) collectTagModifications(structType *ast.StructType) []*define
 				})
 			} else {
 				if cfg.options.skipBasicColumnName && defaultPattern.CheckColumnName(schemaColumn.DBName) {
-					zaplog.LOG.Debug("SKIP SIMPLE FIELD", zap.String("struct_name", cfg.gormStruct.structName), zap.String("struct_field_name", fieldName.Name))
-					if cfg.options.renewIndexName && cfg.hasAnyIdxTagUdxTagValue(fieldItem) {
+					zaplog.LOG.Debug("SKIP SIMPLE FIELD", zap.String("struct_name", cfg.structI.structName), zap.String("struct_field_name", fieldName.Name))
+					if cfg.options.autoIndexName && cfg.hasAnyIdxTagUdxTagValue(fieldItem) {
 						results = append(results, cfg.newFirstNotModification(fieldItem, schemaColumn.DBName))
 					}
 					continue
@@ -234,7 +241,7 @@ func (cfg *Config) collectTagModifications(structType *ast.StructType) []*define
 					})
 				} else {
 					zaplog.LOG.Debug("match-pattern-so-skip", zap.String("name", fieldName.Name), zap.String("tag", fieldItem.Tag.Value))
-					if cfg.options.renewIndexName && cfg.hasAnyIdxTagUdxTagValue(fieldItem) {
+					if cfg.options.autoIndexName && cfg.hasAnyIdxTagUdxTagValue(fieldItem) {
 						results = append(results, cfg.newFirstNotModification(fieldItem, schemaColumn.DBName))
 					}
 					continue
@@ -244,14 +251,14 @@ func (cfg *Config) collectTagModifications(structType *ast.StructType) []*define
 	}
 
 	zaplog.LOG.Debug("change_column_names")
-	for _, rep := range results {
-		zaplog.LOG.Debug("check_column:", zap.String("field_name", rep.structFieldName), zap.String("new_column_name", rep.columnName), zap.String("new_tag_code", rep.newTagCode))
+	for _, item := range results {
+		zaplog.LOG.Debug("check_column:", zap.String("field_name", item.structFieldName), zap.String("new_column_name", item.columnName), zap.String("new_tag_code", item.newTagCode))
 
-		must.Nice(rep.structFieldName)
-		must.Nice(rep.columnName)
-		must.Nice(rep.newTagCode)
-		must.Nice(rep.tagPosNode.Pos())
-		must.Nice(rep.tagPosNode.End())
+		must.Nice(item.structFieldName)
+		must.Nice(item.columnName)
+		must.Nice(item.newTagCode)
+		must.Nice(item.tagPosNode.Pos())
+		must.Nice(item.tagPosNode.End())
 	}
 	return results
 }
@@ -327,7 +334,7 @@ func (cfg *Config) newFirstNotModification(fieldItem *ast.Field, columnName stri
 // 从系统标签中检索列名模式配置
 // 返回用于列名生成验证的模式字符串
 func (cfg *Config) extractTagGetCnmPattern(tagCode string) string {
-	return cfg.extractTagFieldGetValue(tagCode, cfg.options.systemTagName, cfg.options.columnNamingSubTagName)
+	return cfg.extractTagFieldGetValue(tagCode, cfg.options.systemTagName, cfg.options.subTagName)
 }
 
 // extractTagFieldGetValue extracts nested tag field value using dual key lookup
@@ -429,7 +436,7 @@ func (cfg *Config) modifyPatternTagWithName(tag string, patternType gormmomname.
 		if tagValue != "" {
 			zaplog.LOG.Panic("IMPOSSIBLE")
 		}
-		part := fmt.Sprintf(`%s:"%s:%s;"`, cfg.options.systemTagName, cfg.options.columnNamingSubTagName, string(patternType))
+		part := fmt.Sprintf(`%s:"%s:%s;"`, cfg.options.systemTagName, cfg.options.subTagName, string(patternType))
 		if rch := tag[len(tag)-2]; rch != ' ' && rch != '`' {
 			part = " " + part //说明前面还有别的标签
 		}
@@ -437,5 +444,5 @@ func (cfg *Config) modifyPatternTagWithName(tag string, patternType gormmomname.
 		return tag[:p] + part + tag[p:]
 	}
 	//设置这个标签的这个字段的值
-	return syntaxgo_tag.SetTagFieldValue(tag, cfg.options.systemTagName, cfg.options.columnNamingSubTagName, string(patternType), syntaxgo_tag.INSERT_LOCATION_TOP)
+	return syntaxgo_tag.SetTagFieldValue(tag, cfg.options.systemTagName, cfg.options.subTagName, string(patternType), syntaxgo_tag.INSERT_LOCATION_TOP)
 }
