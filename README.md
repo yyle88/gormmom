@@ -1,7 +1,7 @@
 [![GitHub Workflow Status (branch)](https://img.shields.io/github/actions/workflow/status/yyle88/gormmom/release.yml?branch=main&label=BUILD)](https://github.com/yyle88/gormmom/actions/workflows/release.yml?query=branch%3Amain)
 [![GoDoc](https://pkg.go.dev/badge/github.com/yyle88/gormmom)](https://pkg.go.dev/github.com/yyle88/gormmom)
 [![Coverage Status](https://img.shields.io/coveralls/github/yyle88/gormmom/main.svg)](https://coveralls.io/github/yyle88/gormmom?branch=main)
-[![Supported Go Versions](https://img.shields.io/badge/Go-1.22--1.25-lightgrey.svg)](https://go.dev/)
+[![Supported Go Versions](https://img.shields.io/badge/Go-1.24+-lightgrey.svg)](https://go.dev/)
 [![GitHub Release](https://img.shields.io/github/release/yyle88/gormmom.svg)](https://github.com/yyle88/gormmom/releases)
 [![Go Report Card](https://goreportcard.com/badge/github.com/yyle88/gormmom)](https://goreportcard.com/report/github.com/yyle88/gormmom)
 

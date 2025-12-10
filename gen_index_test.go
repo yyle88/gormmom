@@ -1,20 +1,15 @@
 package gormmom
 
 import (
-	"fmt"
 	"testing"
 
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
-	"github.com/yyle88/done"
+	"github.com/yyle88/gormmom/internal/tests"
 	"github.com/yyle88/gormmom/internal/utils"
 	"github.com/yyle88/neatjson/neatjsons"
-	"github.com/yyle88/rese"
 	"github.com/yyle88/rese/resb"
 	"github.com/yyle88/runpath"
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
 /*
@@ -37,15 +32,11 @@ type Example3 struct {
 }
 
 func TestDryRunMigrate(t *testing.T) {
-	dsn := fmt.Sprintf("file:db-%s?mode=memory&cache=shared", uuid.New().String())
-	db := done.VPE(gorm.Open(sqlite.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
-	})).Full()
-	defer rese.F0(rese.P1(db.DB()).Close)
-
-	require.NoError(t, db.Session(&gorm.Session{
-		DryRun: true,
-	}).AutoMigrate(&Example3{}))
+	tests.NewDBRun(t, func(db *gorm.DB) {
+		require.NoError(t, db.Session(&gorm.Session{
+			DryRun: true,
+		}).AutoMigrate(&Example3{}))
+	})
 }
 
 func TestConfig_GenCode_GenIndexes(t *testing.T) {

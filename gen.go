@@ -1,9 +1,9 @@
-// Package gormmom: Native language programming engine that breaks down language barriers in database development
+// Package gormmom: Native language programming engine that eliminates language constraints in database development
 // As the smart tag generation engine of the GORM ecosystem, it empowers teams worldwide to write database models
 // in native languages while auto generating database-compatible GORM tags and column names
 // Supports Unicode-compatible field names in Chinese, Japanese, Korean, and additional languages
 //
-// gormmom: 原生语言编程引擎，打破数据库开发中的语言壁垒
+// gormmom: 原生语言编程引擎，消除数据库开发中的语言限制
 // 作为 GORM 生态系统的智能标签生成引擎，它赋能全球团队使用原生语言编写数据库模型
 // 同时自动生成数据库兼容的 GORM 标签和列名
 // 支持 Unicode 兼容的中文、日语、韩语和其他语言字段名
